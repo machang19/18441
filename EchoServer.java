@@ -106,6 +106,8 @@ public class EchoServer
              keepAlive = headerParams.contains("Connection: keep-alive");
              System.out.println(requestLine);
              System.out.println(headerParams);
+
+             // get file name
              String[] request = requestLine.split(" ");
              String filepath = request[1].substring(1); // remove leading slash
              File testFile = new File(filepath);
@@ -128,7 +130,7 @@ public class EchoServer
              out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
              os.write(mybytearray, 0, mybytearray.length);
              System.out.println("Done.");
-             clientSocket.close(); // For debugging
+//             clientSocket.close(); // For debugging
          }
      }
 } 
