@@ -75,6 +75,21 @@ public class EchoServer
          else { return "application/octet-stream";}
      }
 
+     static List<String> getHeader(BufferedReader in) {
+        List<String> header = new ArrayList<>();
+        try {
+            String param = in.readLine();
+            while (param.length() > 0) {
+                header.add(param);
+                param = in.readLine();
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        return header;
+     }
+
      public static void serve(Socket clientSocket) throws IOException {
          System.out.println("Connection successful");
          System.out.println("Waiting for input.....");
@@ -86,39 +101,34 @@ public class EchoServer
 
              String requestLine = in.readLine(); // Request-Line ; Section 5.1
              String param = in.readLine();
-             List<String> headerParams = new ArrayList<>();
-             while (param.length() > 0) {
-                 System.out.println(param);
-                 headerParams.add(param);
-                 param = in.readLine();
-             }
+             List<String> headerParams = getHeader(in);
+
              keepAlive = headerParams.contains("Connection: keep-alive");
              System.out.println(requestLine);
              System.out.println(headerParams);
              String[] request = requestLine.split(" ");
-             String filepath = request[1];
-             filepath = filepath.replaceAll("/", "");
+             String filepath = request[1].substring(1); // remove leading slash
              File testFile = new File(filepath);
-             BufferedInputStream bis = null;
-             OutputStream os = null;
+
              byte[] mybytearray = new byte[(int) testFile.length()];
              FileInputStream fis = new FileInputStream(testFile);
-             bis = new BufferedInputStream(fis);
+             BufferedInputStream bis = new BufferedInputStream(fis);
              bis.read(mybytearray, 0, mybytearray.length);
-             os = clientSocket.getOutputStream();
+             OutputStream os = clientSocket.getOutputStream();
              System.out.println("Sending " + testFile + "(" + mybytearray.length + " bytes)");
              SimpleDateFormat dateFormat = new SimpleDateFormat(
                      "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
              dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
              String time = dateFormat.format(Calendar.getInstance().getTime());
 
+             // send back http header
              out.writeBytes("HTTP/1.1 200 OK\r\n");
              out.writeBytes("Date: " + time + "\r\n");
              out.writeBytes("Connection: Keep-Alive\r\n");
              out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
-             System.out.println(getContentType(filepath));
              os.write(mybytearray, 0, mybytearray.length);
              System.out.println("Done.");
+             clientSocket.close(); // For debugging
          }
      }
 } 
