@@ -103,27 +103,35 @@ public class VodServer
          String[] request = requestLine.split(" ");
          String filepath = request[1];
          filepath = filepath.replaceAll("/", "");
-         File testFile = new File(filepath);
-         BufferedInputStream bis = null;
-         OutputStream os = null;
-         byte[] mybytearray = new byte[(int) testFile.length()];
-         FileInputStream fis = new FileInputStream(testFile);
-         bis = new BufferedInputStream(fis);
-         bis.read(mybytearray, 0, mybytearray.length);
-         os = clientSocket.getOutputStream();
-         System.out.println("Sending " + testFile + "(" + mybytearray.length + " bytes)");
          SimpleDateFormat dateFormat = new SimpleDateFormat(
                  "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
          dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
          String time = dateFormat.format(Calendar.getInstance().getTime());
+         try {
+             File testFile = new File(filepath);
+             BufferedInputStream bis = null;
+             OutputStream os = null;
+             byte[] mybytearray = new byte[(int) testFile.length()];
+             FileInputStream fis = new FileInputStream(testFile);
+             bis = new BufferedInputStream(fis);
+             bis.read(mybytearray, 0, mybytearray.length);
+             os = clientSocket.getOutputStream();
+             System.out.println("Sending " + testFile + "(" + mybytearray.length + " bytes)");
+             out.writeBytes("HTTP/1.1 200 OK\r\n");
+             out.writeBytes("Date: " + time + "\r\n");
+             out.writeBytes("Connection: Keep-Alive\r\n");
+             out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
+             System.out.println(getContentType(filepath));
+             os.write(mybytearray, 0, mybytearray.length);
+             System.out.println("Done.");
+         }
+         catch (FileNotFoundException e)
+         {
+             out.writeBytes("HTTP/1.1 404 Not Found\r\n");
+             out.writeBytes("Date: " + time + "\r\n");
+             out.writeBytes("Connection: Keep-Alive\r\n");
+         }
 
-         out.writeBytes("HTTP/1.1 200 OK\r\n");
-         out.writeBytes("Date: " + time + "\r\n");
-         out.writeBytes("Connection: Keep-Alive\r\n");
-         out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
-         System.out.println(getContentType(filepath));
-         os.write(mybytearray, 0, mybytearray.length);
-         System.out.println("Done.");
          out.close();
          in.close();
          clientSocket.close();
