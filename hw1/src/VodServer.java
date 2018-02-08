@@ -14,6 +14,8 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
+import static java.lang.Integer.parseInt;
+
 public class VodServer
 {
     static ExecutorService threadPool = Executors.newFixedThreadPool(12);
@@ -21,7 +23,7 @@ public class VodServer
          ServerSocket serverSocket = null;
 
         try {
-            serverSocket = new ServerSocket(8000);
+            serverSocket = new ServerSocket(parseInt(args[0]));
         }
         catch (IOException e) {
              System.err.println("Could not listen on port: 8000.");
