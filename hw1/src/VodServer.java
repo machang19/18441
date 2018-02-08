@@ -22,11 +22,16 @@ public class VodServer
     public static void main(String[] args) throws IOException {
          ServerSocket serverSocket = null;
 
+        if (args.length == 0)
+        {
+            System.err.println("please specify a port number");
+            System.exit(1);
+        }
         try {
             serverSocket = new ServerSocket(parseInt(args[0]));
         }
         catch (IOException e) {
-             System.err.println("Could not listen on port: 8000.");
+             System.err.println("Could not listen on port: " + args[0]);
             System.exit(1);
         }
         Socket clientSocket = null;
@@ -90,16 +95,21 @@ public class VodServer
          BufferedReader in = new BufferedReader(
                  new InputStreamReader(clientSocket.getInputStream()));
 
-         String requestLine = in.readLine(); // Request-Line ; Section 5.1
+         String requestLine = in.readLine();
          String param = in.readLine();
          List<String> headerParams = new ArrayList<>();
+         String range = "";
          while (param.length() > 0) {
-             System.out.println(param);
+             String[] temp = param.split(":");
+
+             if (range.equals("") && param.split(":")[0].equals("Range"))
+             {
+                 range = (param.split(":")[1]).trim();
+             }
              headerParams.add(param);
              param = in.readLine();
          }
-         System.out.println(requestLine);
-         System.out.println(headerParams);
+         System.out.println(range);
          String[] request = requestLine.split(" ");
          String filepath = request[1];
          filepath = filepath.replaceAll("/", "");
@@ -114,16 +124,59 @@ public class VodServer
              byte[] mybytearray = new byte[(int) testFile.length()];
              FileInputStream fis = new FileInputStream(testFile);
              bis = new BufferedInputStream(fis);
-             bis.read(mybytearray, 0, mybytearray.length);
-             os = clientSocket.getOutputStream();
-             System.out.println("Sending " + testFile + "(" + mybytearray.length + " bytes)");
-             out.writeBytes("HTTP/1.1 200 OK\r\n");
-             out.writeBytes("Date: " + time + "\r\n");
-             out.writeBytes("Connection: Keep-Alive\r\n");
-             out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
-             System.out.println(getContentType(filepath));
-             os.write(mybytearray, 0, mybytearray.length);
-             System.out.println("Done.");
+             if (range.equals("")) {
+                 bis.read(mybytearray, 0, mybytearray.length);
+                 os = clientSocket.getOutputStream();
+                 System.out.println("Sending " + testFile + "(" + mybytearray.length + " bytes)");
+                 out.writeBytes("HTTP/1.1 200 OK\r\n");
+                 out.writeBytes("Date: " + time + "\r\n");
+                 out.writeBytes("Connection: Keep-Alive\r\n");
+                 out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
+                 System.out.println(getContentType(filepath));
+                 os.write(mybytearray, 0, mybytearray.length);
+                 System.out.println("Done.");
+             }
+             else {
+                 String[] temp = range.split("=");
+                 String[] temp2 = temp[1].split("-");
+                 int start;
+                 int length;
+                 if (temp2.length == 1) {
+                     if (temp[1].indexOf("-") == 0) {
+                         length = parseInt(temp2[0]);
+                         start = Integer.max(0, mybytearray.length - length);
+                     }
+                     else {
+                         start = parseInt(temp2[0]);
+                         length = mybytearray.length - start;
+
+                     }
+                 }
+                 else {
+                     start = parseInt(temp2[0]);
+                     int end = parseInt(temp2[1]);
+                     length = Integer.min(end - start + 1, mybytearray.length - start + 1);
+                 }
+                 System.out.println(start);
+                 System.out.println(length);
+                 bis.read(mybytearray, start, length);
+                 os = clientSocket.getOutputStream();
+                 System.out.println("Sending " + testFile + "(" + length + " bytes)");
+                 if (start == 0 && length == mybytearray.length)
+                 {
+                     out.writeBytes("HTTP/1.1 200 OK\r\n");
+                 }
+                 else {
+                     out.writeBytes("HTTP/1.1 206 Partial Content\r\n");
+                 }
+                 out.writeBytes("Date: " + time + "\r\n");
+                 out.writeBytes("Connection: Keep-Alive\r\n");
+                 out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
+                 System.out.println(getContentType(filepath));
+                 os.write(mybytearray, start, length);
+                 System.out.println("Done.");
+
+             }
          }
          catch (FileNotFoundException e)
          {
