@@ -1,4 +1,6 @@
-import java.net.*; 
+
+
+import java.net.*;
 import java.io.*;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -12,7 +14,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
-public class EchoServer 
+public class VodServer
 {
     static ExecutorService threadPool = Executors.newFixedThreadPool(12);
     public static void main(String[] args) throws IOException {
@@ -34,6 +36,7 @@ public class EchoServer
             } catch (IOException e) {
                 System.err.println("Accept failed.");
                 System.exit(1);
+                break;
             }
             if (clientSocket != null)
             {
@@ -44,7 +47,7 @@ public class EchoServer
                     }
                     catch (IOException e)
                     {
-                        
+
                     }
                 });
             }
@@ -52,10 +55,8 @@ public class EchoServer
         }
 
 
-        //out.close();
-        //in.close();
-        //clientSocket.close();
-        //serverSocket.close();
+
+        serverSocket.close();
 
      }
 
@@ -121,5 +122,9 @@ public class EchoServer
          System.out.println(getContentType(filepath));
          os.write(mybytearray, 0, mybytearray.length);
          System.out.println("Done.");
+         out.close();
+         in.close();
+         clientSocket.close();
      }
+
 } 
