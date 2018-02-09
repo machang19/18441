@@ -1,0 +1,4 @@
+Used java.util to handle concurrent requests. Used executor service to create a threadPool so that too many 
+threads are not created to slow down performance 
+Used java.io to communicate  between server and client 
+not really too much library stuff 
