@@ -16,6 +16,7 @@ import static java.lang.Integer.parseInt;
 public class VodServer
 {
     static ExecutorService threadPool = Executors.newFixedThreadPool(12);
+    static BackendServer bServer = new BackendServer();
     public static void main(String[] args) throws IOException {
          ServerSocket serverSocket = null;
 
@@ -116,8 +117,13 @@ public class VodServer
          System.out.println(Arrays.asList(peerInfo));
          if (peerInfo.length > 1 && peerInfo[1].equals("peer"))
          {
+             Map<String,String> fancy_params = parse_uri(uri);
+             System.out.println(fancy_params);
+             filepath = fancy_params.get("path");
              if (peerInfo[2].substring(0,3).equals("add")) {
                  System.out.println("we are adding");
+                 bServer.addPeer(filepath, fancy_params.get("host"), parseInt(fancy_params.get("port")) );
+
              }
              else if (peerInfo[2].equals("view"))
              {
@@ -127,9 +133,7 @@ public class VodServer
              {
                  System.out.println("set bit rate");
              }
-             Map<String,String> fancy_params = parse_uri(uri);
-             System.out.println(fancy_params);
-             filepath = fancy_params.get("path");
+
          }
          else
          {
