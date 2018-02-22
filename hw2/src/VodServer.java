@@ -111,9 +111,30 @@ public class VodServer
          String[] request = requestLine.split(" ");
          System.out.println(requestLine);
          String uri = request[1];
-         Map<String,String> fancy_params = parse_uri(uri);
-         System.out.println(fancy_params);
-         String filepath = request[1];
+         String[] peerInfo = uri.split("/");
+         String filepath;
+         System.out.println(Arrays.asList(peerInfo));
+         if (peerInfo.length > 1 && peerInfo[1].equals("peer"))
+         {
+             if (peerInfo[2].substring(0,3).equals("add")) {
+                 System.out.println("we are adding");
+             }
+             else if (peerInfo[2].equals("view"))
+             {
+                 System.out.println("viewing");
+             }
+             else if (peerInfo[2].substring(0,6).equals("config"))
+             {
+                 System.out.println("set bit rate");
+             }
+             Map<String,String> fancy_params = parse_uri(uri);
+             System.out.println(fancy_params);
+             filepath = fancy_params.get("path");
+         }
+         else
+         {
+             filepath = uri;
+         }
          filepath = filepath.replaceAll("/", "");
          SimpleDateFormat dateFormat = new SimpleDateFormat(
                  "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
