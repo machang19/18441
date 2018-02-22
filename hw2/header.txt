@@ -1,0 +1,6 @@
+16 bits for source port
+16 bits for destination port
+32 bits for sequence number
+32 bits for acknowledgement number
+16 bits for checksum/crc
+16 bits padding
