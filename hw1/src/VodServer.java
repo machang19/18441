@@ -28,7 +28,7 @@ public class VodServer
             serverSocket = new ServerSocket(parseInt(args[0]));
         }
         catch (IOException e) {
-             System.err.println("Could not listen on port: " + args[0]);
+            System.err.println("Could not listen on port: " + args[0]);
             System.exit(1);
         }
         Socket clientSocket = null;
@@ -106,8 +106,13 @@ public class VodServer
              headerParams.add(param);
              param = in.readLine();
          }
+         System.out.println(headerParams);
          System.out.println(range);
          String[] request = requestLine.split(" ");
+         System.out.println(requestLine);
+         String uri = request[1];
+         Map<String,String> fancy_params = parse_uri(uri);
+         System.out.println(fancy_params);
          String filepath = request[1];
          filepath = filepath.replaceAll("/", "");
          SimpleDateFormat dateFormat = new SimpleDateFormat(
@@ -186,5 +191,39 @@ public class VodServer
          in.close();
          clientSocket.close();
      }
+
+    private static Map<String,String> parse_uri(String uri) {
+        Map<String,String> result = new HashMap<>();
+        int starti = uri.indexOf("path=");
+        if (starti != -1) {
+            int endi = uri.indexOf('&', starti);
+            if(endi == -1) endi = uri.length();
+            String path = uri.substring(starti + 5,endi);
+            result.put("path", path);
+        }
+        starti = uri.indexOf("host=");
+        if (starti != -1) {
+            int endi = uri.indexOf('&', starti);
+            if(endi == -1) endi = uri.length();
+            String host = uri.substring(starti + 5,endi);
+            result.put("host", host);
+        }
+        starti = uri.indexOf("port=");
+        if (starti != -1) {
+            int endi = uri.indexOf('&', starti);
+            if(endi == -1) endi = uri.length();
+            String port = uri.substring(starti + 5,endi);
+            result.put("port", port);
+        }
+        starti = uri.indexOf("rate=");
+        if (starti != -1) {
+            int endi = uri.indexOf('&', starti);
+            if(endi == -1) endi = uri.length();
+            String rate = uri.substring(starti + 5,endi);
+            result.put("rate", rate);
+        }
+
+        return result;
+    }
 
 } 
