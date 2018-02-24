@@ -1,27 +1,21 @@
-
-
 import java.net.*;
 import java.io.*;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-
 import static java.lang.Integer.parseInt;
 
-public class VodServer
-{
+public class VodServer {
     static ExecutorService threadPool = Executors.newFixedThreadPool(12);
     static BackendServer bServer = new BackendServer();
     public static void main(String[] args) throws IOException {
          ServerSocket serverSocket = null;
 
-        if (args.length == 0)
-        {
+        if (args.length == 0) {
             System.err.println("please specify a port number");
             System.exit(1);
         }
@@ -43,50 +37,42 @@ public class VodServer
                 System.exit(1);
                 break;
             }
-            if (clientSocket != null)
-            {
+            if (clientSocket != null) {
                 Socket finalCS = clientSocket;
                 threadPool.submit(() -> {
                     try {
                         serve(finalCS);
                     }
-                    catch (IOException e)
-                    {
+                    catch (IOException e) {
 
                     }
                 });
             }
             clientSocket = null;
         }
-
-
-
         serverSocket.close();
-
      }
 
-     static String getContentType(String filename)
-     {
+     static String getContentType(String filename) {
          System.out.println(filename);
          int i = filename.indexOf('.');
          String extension = filename.substring(i +1 );
          System.out.println(i);
          System.out.println(extension);
          extension = extension.toLowerCase();
-         if (extension.equals("txt")) { return "text/html"; }
-         else if (extension.equals("css")) {return "text/css";}
-         else if (extension.equals("htm") || extension.equals("html")) {return "text/html";}
-         else if (extension.equals("gif")) {return "image/gif";}
-         else if (extension.equals("jpg") || extension.equals("jpeg")) {return "image/jpeg";}
-         else if (extension.equals("png")) {return "image/png";}
-         else if (extension.equals("js")) {return "application/javascript";}
+         if (extension.equals("txt"))      { return "text/html"; }
+         else if (extension.equals("css")) { return "text/css"; }
+         else if (extension.equals("htm") || extension.equals("html")) { return "text/html"; }
+         else if (extension.equals("gif")) { return "image/gif"; }
+         else if (extension.equals("jpg") || extension.equals("jpeg")) { return "image/jpeg"; }
+         else if (extension.equals("png")) { return "image/png"; }
+         else if (extension.equals("js"))  { return "application/javascript"; }
          else if (extension.equals("mp4") || extension.equals("webm") || extension.equals("ogg") || extension.equals("ogv"))
-         {return "video/webm";}
-         else { return "application/octet-stream";}
+         { return "video/webm";}
+         else { return "application/octet-stream"; }
      }
 
-     public static void serve(Socket clientSocket) throws IOException
-     {
+     public static void serve(Socket clientSocket) throws IOException {
          System.out.println("Connection successful");
          System.out.println("Waiting for input.....");
          DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
@@ -99,9 +85,7 @@ public class VodServer
          String range = "";
          while (param.length() > 0) {
              String[] temp = param.split(":");
-
-             if (range.equals("") && param.split(":")[0].equals("Range"))
-             {
+             if (range.equals("") && param.split(":")[0].equals("Range")) {
                  range = (param.split(":")[1]).trim();
              }
              headerParams.add(param);
@@ -115,28 +99,23 @@ public class VodServer
          String[] peerInfo = uri.split("/");
          String filepath;
          System.out.println(Arrays.asList(peerInfo));
-         if (peerInfo.length > 1 && peerInfo[1].equals("peer"))
-         {
+         if (peerInfo.length > 1 && peerInfo[1].equals("peer")) {
              Map<String,String> fancy_params = parse_uri(uri);
              System.out.println(fancy_params);
              filepath = fancy_params.get("path");
              if (peerInfo[2].substring(0,3).equals("add")) {
                  System.out.println("we are adding");
                  bServer.addPeer(filepath, fancy_params.get("host"), parseInt(fancy_params.get("port")) );
-
              }
-             else if (peerInfo[2].equals("view"))
-             {
+             else if (peerInfo[2].equals("view")) {
                  System.out.println("viewing");
              }
-             else if (peerInfo[2].substring(0,6).equals("config"))
-             {
+             else if (peerInfo[2].substring(0,6).equals("config")) {
                  System.out.println("set bit rate");
              }
 
          }
-         else
-         {
+         else {
              filepath = uri;
          }
          filepath = filepath.replaceAll("/", "");
@@ -176,7 +155,6 @@ public class VodServer
                      else {
                          start = parseInt(temp2[0]);
                          length = mybytearray.length - start;
-
                      }
                  }
                  else {
@@ -189,8 +167,7 @@ public class VodServer
                  bis.read(mybytearray, start, length);
                  os = clientSocket.getOutputStream();
                  System.out.println("Sending " + testFile + "(" + length + " bytes)");
-                 if (start == 0 && length == mybytearray.length)
-                 {
+                 if (start == 0 && length == mybytearray.length) {
                      out.writeBytes("HTTP/1.1 200 OK\r\n");
                  }
                  else {
@@ -202,11 +179,9 @@ public class VodServer
                  System.out.println(getContentType(filepath));
                  os.write(mybytearray, start, length);
                  System.out.println("Done.");
-
              }
          }
-         catch (FileNotFoundException e)
-         {
+         catch (FileNotFoundException e) {
              out.writeBytes("HTTP/1.1 404 Not Found\r\n");
              out.writeBytes("Date: " + time + "\r\n");
              out.writeBytes("Connection: Keep-Alive\r\n");
