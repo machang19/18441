@@ -1,3 +1,4 @@
+package src;
 import java.net.*;
 import java.io.*;
 import java.io.IOException;
@@ -100,18 +101,19 @@ public class VodServer {
          String filepath;
          System.out.println(Arrays.asList(peerInfo));
          if (peerInfo.length > 1 && peerInfo[1].equals("peer")) {
-             Map<String,String> fancy_params = parse_uri(uri);
-             System.out.println(fancy_params);
-             filepath = fancy_params.get("path");
+             Map<String,String> uri_params = parse_uri(uri);
+             System.out.println(uri_params);
+             filepath = uri_params.get("path");
              if (peerInfo[2].substring(0,3).equals("add")) {
                  System.out.println("we are adding");
-                 bServer.addPeer(filepath, fancy_params.get("host"), parseInt(fancy_params.get("port")) );
+                 bServer.addPeer(filepath, uri_params.get("host"), parseInt(uri_params.get("port")) );
              }
              else if (peerInfo[2].equals("view")) {
                  System.out.println("viewing");
              }
              else if (peerInfo[2].substring(0,6).equals("config")) {
                  System.out.println("set bit rate");
+                 // TODO: set bit rate
              }
 
          }

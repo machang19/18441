@@ -1,28 +1,27 @@
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
+package src;
 import java.util.Date;
+import java.net.*;
+import java.io.*;
 
 import static java.lang.Integer.parseInt;
 
 public class BackendServer {
 
     private static String filename;
-    private static String hostname;
-    private static int port;
     private DatagramSocket dsock;
+    private Socket sock;
+
     public BackendServer() {
         this.filename = "";
-        this.hostname = "";
-        this.port = -1;
+        this.sock = null;
     }
-    public static void main( String args[]) throws Exception
-    {
+    public static void main( String args[]) throws Exception {
+        // starter code
         DatagramSocket dsock = new DatagramSocket(7077);
         byte arr1[] = new byte[150];
         DatagramPacket dpack = new DatagramPacket(arr1, arr1.length );
 
-        while(true)
-        {
+        while(true) {
             dsock.receive(dpack);
             byte arr2[] = dpack.getData();
             int packSize = dpack.getLength();
@@ -32,14 +31,17 @@ public class BackendServer {
             dsock.send(dpack);
         }
     }
-    public void addPeer(String filename, String hostname, int port)
-    {
+    public void addPeer(String filename, String host, int port) throws IOException {
         this.filename = filename;
-        String[] args = hostname.split(":");
-        this.hostname = args[0];
-        this.port = port;
+        try {
+            InetAddress hostAddress = InetAddress.getByName(host);
+            this.sock = new Socket(host, port);
+        }
+        catch (UnknownHostException e){
+            System.out.println("Could not find host " + host + "on port " + port);
+        }
     }
-    public void getContent(int start, int end){
+    public void getContent(int start, int end) {
 
     }
     public void sendHeader(int size) {
