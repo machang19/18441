@@ -1,4 +1,3 @@
-package src;
 import java.util.Date;
 import java.net.*;
 import java.io.*;
@@ -17,7 +16,7 @@ public class BackendServer {
     }
     public static void main( String args[]) throws Exception {
         // starter code
-        DatagramSocket dsock = new DatagramSocket(7077);
+        DatagramSocket dsock = new DatagramSocket(parseInt(args[0]));
         byte arr1[] = new byte[150];
         DatagramPacket dpack = new DatagramPacket(arr1, arr1.length );
 
@@ -26,23 +25,44 @@ public class BackendServer {
             byte arr2[] = dpack.getData();
             int packSize = dpack.getLength();
             String s2 = new String(arr2, 0, packSize);
-
+            if (s2.startsWith("Send this file:"))
+            {
+                String filepath = s2.substring(15,s2.length()-1);
+                File file = new File(filepath);
+                byte[] filearray = new byte[(int) file.length()];
+                DatagramPacket responsePacket = new DatagramPacket(filearray, filearray.length );
+                dsock.send(responsePacket);
+            }
             System.out.println( new Date( ) + "  " + dpack.getAddress( ) + " : " + dpack.getPort( ) + " "+ s2);
-            dsock.send(dpack);
+
         }
     }
     public void addPeer(String filename, String host, int port) throws IOException {
         this.filename = filename;
         try {
             InetAddress hostAddress = InetAddress.getByName(host);
-            this.sock = new Socket(host, port);
+            this.dsock = new DatagramSocket(port,hostAddress);
         }
         catch (UnknownHostException e){
             System.out.println("Could not find host " + host + "on port " + port);
         }
     }
-    public void getContent(int start, int end) {
+    public byte[] getContent(int start, int end) {
 
+        byte[] result = {};
+        try {
+            String message1 = "Send this file:" + this.filename;
+            byte arr[] = message1.getBytes( );
+            DatagramPacket dpack = new DatagramPacket(arr, arr.length);
+            dsock.send(dpack);
+            dsock.receive(dpack);
+            byte filearr[] = dpack.getData();
+            return filearr;
+        }
+        catch (IOException e)
+        {
+            return result;
+        }
     }
     public void sendHeader(int size) {
         // 16 bits for source port, 16 bits for destination port

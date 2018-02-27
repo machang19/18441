@@ -1,4 +1,3 @@
-package src;
 import java.net.*;
 import java.io.*;
 import java.io.IOException;
@@ -16,12 +15,24 @@ public class VodServer {
     public static void main(String[] args) throws IOException {
          ServerSocket serverSocket = null;
 
-        if (args.length == 0) {
+        if (args.length < 2) {
             System.err.println("please specify a port number");
             System.exit(1);
         }
         try {
             serverSocket = new ServerSocket(parseInt(args[0]));
+            threadPool.submit(() -> {
+                try {
+                    String[] b_args = {args[1]};
+                    bServer.main(b_args);
+                }
+                catch (Exception e)
+                {
+
+                }
+            }
+
+            );
         }
         catch (IOException e) {
             System.err.println("Could not listen on port: " + args[0]);
@@ -100,6 +111,7 @@ public class VodServer {
          String[] peerInfo = uri.split("/");
          String filepath;
          System.out.println(Arrays.asList(peerInfo));
+         byte[] filearr = {};
          if (peerInfo.length > 1 && peerInfo[1].equals("peer")) {
              Map<String,String> uri_params = parse_uri(uri);
              System.out.println(uri_params);
@@ -110,6 +122,7 @@ public class VodServer {
              }
              else if (peerInfo[2].equals("view")) {
                  System.out.println("viewing");
+                 filearr = bServer.getContent(0,0); // 0, 0 are dummy args dont do anything yet
              }
              else if (peerInfo[2].substring(0,6).equals("config")) {
                  System.out.println("set bit rate");
@@ -130,6 +143,10 @@ public class VodServer {
              BufferedInputStream bis = null;
              OutputStream os = null;
              byte[] mybytearray = new byte[(int) testFile.length()];
+             if (filearr.length != 0)
+             {
+                 mybytearray = filearr;
+             }
              FileInputStream fis = new FileInputStream(testFile);
              bis = new BufferedInputStream(fis);
              if (range.equals("")) {
