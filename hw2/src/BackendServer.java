@@ -22,9 +22,11 @@ public class BackendServer {
 
         while(true) {
             dsock.receive(dpack);
+            System.out.println("recieved dpack");
             byte arr2[] = dpack.getData();
             int packSize = dpack.getLength();
             String s2 = new String(arr2, 0, packSize);
+            System.out.println(s2);
             if (s2.startsWith("Send this file:"))
             {
                 String filepath = s2.substring(15,s2.length()-1);
@@ -42,6 +44,7 @@ public class BackendServer {
         try {
             InetAddress hostAddress = InetAddress.getByName(host);
             this.dsock = new DatagramSocket(port,hostAddress);
+            System.out.println("connected");
         }
         catch (UnknownHostException e){
             System.out.println("Could not find host " + host + "on port " + port);
