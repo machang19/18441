@@ -119,7 +119,7 @@ public class VodServer {
              if (peerInfo[2].substring(0,3).equals("add")) {
                  System.out.println("we are adding");
                  bServer.addPeer(filepath, uri_params.get("host"), parseInt(uri_params.get("port")) );
-                 return;
+                    return;
              }
              else if (peerInfo[2].equals("view")) {
                  System.out.println("viewing");

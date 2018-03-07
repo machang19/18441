@@ -7,7 +7,7 @@ import static java.lang.Integer.parseInt;
 public class BackendServer {
 
     private static String filename;
-    private DatagramSocket dsock;
+    private static DatagramSocket dsock;
     private Socket sock;
 
     public BackendServer() {
@@ -16,11 +16,13 @@ public class BackendServer {
     }
     public static void main( String args[]) throws Exception {
         // starter code
-        DatagramSocket dsock = new DatagramSocket(parseInt(args[0]));
+        dsock = new DatagramSocket(parseInt(args[0]));
+        System.out.println("backend port =" + args[0]);
         byte arr1[] = new byte[150];
         DatagramPacket dpack = new DatagramPacket(arr1, arr1.length );
 
         while(true) {
+            System.out.println("waiting");
             dsock.receive(dpack);
             System.out.println("recieved dpack");
             byte arr2[] = dpack.getData();
@@ -42,11 +44,15 @@ public class BackendServer {
     public void addPeer(String filename, String host, int port) throws IOException {
         this.filename = filename;
         try {
+            System.out.println(port);
+            System.out.println(host);
+            System.out.println(filename);
             InetAddress hostAddress = InetAddress.getByName(host);
-            this.dsock = new DatagramSocket(port,hostAddress);
+            //this.dsock = new DatagramSocket(port,hostAddress);
             System.out.println("connected");
         }
-        catch (UnknownHostException e){
+        catch (Exception e){
+            System.out.println(e);
             System.out.println("Could not find host " + host + "on port " + port);
         }
     }
@@ -58,7 +64,9 @@ public class BackendServer {
             byte arr[] = message1.getBytes( );
             DatagramPacket dpack = new DatagramPacket(arr, arr.length);
             dsock.send(dpack);
+            System.out.println("sent packet");
             dsock.receive(dpack);
+            System.out.println("received packet");
             byte filearr[] = dpack.getData();
             return filearr;
         }
