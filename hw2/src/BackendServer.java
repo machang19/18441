@@ -26,6 +26,7 @@ public class BackendServer {
             byte initarr[] = fileSize.getBytes();
             DatagramPacket initpack = new DatagramPacket(initarr, initarr.length, host, 8345);
             initSock.send(initpack);
+            initSock.close();
             System.out.println("Sent initial packet");
         }
         catch (Exception e) {
@@ -38,14 +39,15 @@ public class BackendServer {
         byte sendarr[] = new byte[maxSize];
         File file = new File("");
 
-        dsock = new DatagramSocket(parseInt(args[0]));
-        System.out.println("backend port =" + args[0]);
-        byte arr1[] = new byte[150];
-        DatagramPacket dpack = new DatagramPacket(arr1, arr1.length );
-
         while(true) {
+            DatagramSocket dsock4 = new DatagramSocket(parseInt(args[0]));
+            System.out.println("backend port =" + args[0]);
+            byte arr1[] = new byte[150];
+            DatagramPacket dpack = new DatagramPacket(arr1, arr1.length );
+
             System.out.println("waiting");
-            dsock.receive(dpack);
+            dsock4.receive(dpack);
+            dsock4.close();
             System.out.println("received dpack");
             byte arr2[] = dpack.getData();
             int packSize = dpack.getLength();
@@ -78,6 +80,7 @@ public class BackendServer {
                             }
                             DatagramPacket responsePacket = new DatagramPacket(sendarr, maxSize, host, 8345);
                             checkSock.send(responsePacket);
+                            checkSock.close();
                             System.out.println("Sent response packet!");
                             if (receiveAck(host, 8345)) {
                                 i += maxSize;
@@ -113,6 +116,7 @@ public class BackendServer {
             DatagramPacket ack = new DatagramPacket(arr, arr.length, host, port);
 	        DatagramSocket dsock2 = new DatagramSocket(port);
             dsock2.send(ack);
+            dsock2.close();
         }
         catch (Exception e) {
             System.out.println(e);
@@ -125,6 +129,7 @@ public class BackendServer {
 	        DatagramSocket dsock2 = new DatagramSocket(port);
     	    dsock2.setSoTimeout(1000);
             dsock2.receive(dpack);
+            dsock2.close();
             byte[] data = dpack.getData();
             int length = dpack.getLength();
             String ack = new String(data, 0, length);
@@ -160,6 +165,7 @@ public class BackendServer {
             // receive length of file
 	        DatagramSocket dsock2 = new DatagramSocket(8345);
             dsock2.receive(dpack);
+            dsock2.close();
             System.out.println("received packet");
             byte filearr[] = dpack.getData();
             String s2 = new String(filearr, 10, dpack.getLength()-10);
