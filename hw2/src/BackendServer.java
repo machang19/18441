@@ -22,7 +22,7 @@ public class BackendServer {
                 DatagramSocket initSock = new DatagramSocket();
                 String strAddr = dpack.getAddress().toString();
                 strAddr = strAddr.substring(1); // strip leading slash from address
-                InetAddress iaddr = InetAddress.getByName(strAddr);
+                InetAddress iaddr = InetAddress.getByName("128.237.221.52");
                 System.out.println(strAddr);
                 initSock.connect(iaddr, 8345);
                 String fileSize = "File size:" + file.length();
