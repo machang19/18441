@@ -25,11 +25,11 @@ public class BackendServer {
                 strAddr = strAddr.substring(1); // strip leading slash from address
                 InetAddress iaddr = InetAddress.getByName("128.237.160.226");
                 System.out.println(strAddr);
-                initSock.connect(iaddr, 8345);
+                //initSock.connect(iaddr, 8345);
                 System.out.println("Connected!");
                 String fileSize = "File size:" + file.length();
                 byte initarr[] = fileSize.getBytes();
-                DatagramPacket initpack = new DatagramPacket(initarr, initarr.length);
+                DatagramPacket initpack = new DatagramPacket(initarr, initarr.length, iaddr, 8345);
                 initSock.send(initpack);
                 System.out.println("Sent initial packet");
                 if (true)
@@ -142,14 +142,16 @@ public class BackendServer {
         try {
             System.out.println("trying to send");
             String message1 = "Send this file:" + "small.ogv";
-            byte arr[] = message1.getBytes( );
-            DatagramPacket dpack = new DatagramPacket(arr, arr.length);
+
             InetAddress host = InetAddress.getByName("128.2.13.138");
             this.dsock = new DatagramSocket();
-            this.dsock.connect(host,8345);
             System.out.println("connected to DatagramSocket");
+            byte arr[] = message1.getBytes( );
+            DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, 8345);
             dsock.send(dpack);
             System.out.println("sent packet");
+            arr = new byte[20];
+            dpack = new DatagramPacket(arr, arr.length, host,8345);
             dsock.receive(dpack);
             System.out.println("received packet");
             byte filearr[] = dpack.getData();
