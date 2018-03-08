@@ -25,8 +25,8 @@ public class BackendServer {
                 strAddr = strAddr.substring(1); // strip leading slash from address
                 InetAddress iaddr = InetAddress.getByName("128.237.160.226");
                 System.out.println(strAddr);
-                initSock.connect(iaddr, 8345)
-                System.out.println("Connected!");;
+                initSock.connect(iaddr, 8345);
+                System.out.println("Connected!");
                 String fileSize = "File size:" + file.length();
                 byte initarr[] = fileSize.getBytes();
                 DatagramPacket initpack = new DatagramPacket(initarr, initarr.length);
