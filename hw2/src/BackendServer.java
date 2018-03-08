@@ -165,7 +165,7 @@ public class BackendServer {
             dsock.receive(dpack);
             System.out.println("received packet");
             byte filearr[] = dpack.getData();
-            String s2 = new String(filearr, 10, dpack.getLength());
+            String s2 = new String(filearr, 10, dpack.getLength()-10);
             System.out.println(s2);
             int length = parseInt(s2);
             sendAck(dsock);
