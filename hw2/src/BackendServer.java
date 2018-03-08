@@ -88,6 +88,37 @@ public class BackendServer {
 
         }
     }
+    private void sendAck(DatagramSocket dsock) {
+        try {
+            String message = "ack";
+            byte arr[] = message.getBytes();
+            DatagramPacket ack = new DatagramPacket(arr, arr.length);
+            dsock.send(ack);
+        }
+        catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+    private static boolean receiveAck(DatagramSocket dsock) {
+        byte[] arr = new byte[150];
+        DatagramPacket dpack = new DatagramPacket(arr, arr.length);
+        try {
+            dsock.setSoTimeout(1000);
+            dsock.receive(dpack);
+            byte[] data = dpack.getData();
+            int length = dpack.getLength();
+            String ack = new String(data, 0, length);
+            System.out.println(ack);
+            if (ack == "ack") {
+                return true;
+            }
+        }
+        catch (Exception e) {
+            System.out.println(e);
+            return false;
+        }
+        return false;
+    }
     public void addPeer(String filename, String host, int port) throws IOException {
         this.filename = filename;
         try {
