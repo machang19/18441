@@ -32,14 +32,27 @@ public class BackendServer {
             if (s2.startsWith("Send this file:"))
             {
                 System.out.println("inside file send statement");
-                String filepath = s2.substring(15,s2.length()-1);
-                File file = new File(filepath);
-                byte[] filearray = new byte[(int) file.length()];
-                System.out.println("received packet and sending response");
-                DatagramPacket responsePacket = new DatagramPacket(filearray, filearray.length );
-                dsock.send(responsePacket);
-                System.out.println("Sent response packet!");
+                try {
+                    String filepath = s2.substring(15,s2.length());
+                    File file = new File(filepath);
+                    byte[] filearray = new byte[(int) file.length()];
+                    FileInputStream fis = new FileInputStream(file);
+                    BufferedInputStream bis = new BufferedInputStream(fis);
+                    bis.read(filearray, 0, filearray.length);
+                    System.out.println("received packet and sending response");
+                    DatagramSocket checkSock = new DatagramSocket();
+                    System.out.println("ADDRESS: " + dpack.getAddress());
+                    InetAddress iaddr = InetAddress.getByName("128.237.137.96");
+                    checkSock.connect(iaddr, 8345);
+                    DatagramPacket responsePacket = new DatagramPacket(filearray, filearray.length );
+                    checkSock.send(responsePacket);
+                    System.out.println("Sent response packet!");
+                }
+                catch (Exception e) {
+                    System.out.println(e);
+                }
             }
+            System.out.println("after if statement");
             System.out.println( new Date( ) + "  " + dpack.getAddress( ) + " : " + dpack.getPort( ) + " "+ s2);
 
         }
