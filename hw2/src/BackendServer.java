@@ -59,27 +59,27 @@ public class BackendServer {
                 String filepath = s2.substring(15, s2.length());
                 File file = new File(filepath);
                 int filesize = (int)file.length();
-                boolean ack = initialConnectionSetup(dpack, file);
+                initialConnectionSetup(dpack, file);
                 System.out.println("Finished initial connection setup");
-                try {
-                    byte[] filearray = new byte[(int) file.length()];
-                    FileInputStream fis = new FileInputStream(file);
-                    BufferedInputStream bis = new BufferedInputStream(fis);
-                    bis.read(filearray, 0, filearray.length);
-                    System.out.println("received packet and sending response");
-                    DatagramSocket checkSock = new DatagramSocket();
-                    System.out.println("ADDRESS: " + dpack.getAddress());
-//                    InetAddress iaddr = InetAddress.getByName("128.237.137.96");
-                    InetAddress iaddr = dpack.getAddress();
-                    System.out.println(iaddr.toString());
-                    checkSock.connect(iaddr, 8345);
-                    DatagramPacket responsePacket = new DatagramPacket(filearray, filearray.length );
-                    checkSock.send(responsePacket);
-                    System.out.println("Sent response packet!");
-                }
-                catch (Exception e) {
-                    System.out.println(e);
-                }
+//                try {
+//                    byte[] filearray = new byte[(int) file.length()];
+//                    FileInputStream fis = new FileInputStream(file);
+//                    BufferedInputStream bis = new BufferedInputStream(fis);
+//                    bis.read(filearray, 0, filearray.length);
+//                    System.out.println("received packet and sending response");
+//                    DatagramSocket checkSock = new DatagramSocket();
+//                    System.out.println("ADDRESS: " + dpack.getAddress());
+////                    InetAddress iaddr = InetAddress.getByName("128.237.137.96");
+//                    InetAddress iaddr = dpack.getAddress();
+//                    System.out.println(iaddr.toString());
+//                    checkSock.connect(iaddr, 8345);
+//                    DatagramPacket responsePacket = new DatagramPacket(filearray, filearray.length );
+//                    checkSock.send(responsePacket);
+//                    System.out.println("Sent response packet!");
+////                }
+//                catch (Exception e) {
+//                    System.out.println(e);
+//                }
             }
             System.out.println("after if statement");
             System.out.println( new Date( ) + "  " + dpack.getAddress( ) + " : " + dpack.getPort( ) + " "+ s2);
@@ -106,14 +106,15 @@ public class BackendServer {
         byte[] result = {};
         try {
             System.out.println("trying to send");
-            String message1 = "Send this file:" + this.filename;
+            String message1 = "Send this file:" + "small.ogv";
             byte arr[] = message1.getBytes( );
             DatagramPacket dpack = new DatagramPacket(arr, arr.length);
-            byte[] ipAddr = new byte[]{(byte)128, (byte)237, 125, (byte)153};
+            byte[] ipAddr = new byte[]{(byte)128, (byte)2,13, (byte)188};
             //InetAddress host = InetAddress.getByAddress("128.237.125.153");
             InetAddress host = InetAddress.getByAddress(ipAddr);
             System.out.println("here2");
-            this.dsock = new DatagramSocket(8345,host);
+            this.dsock = new DatagramSocket();
+            this.dsock.connect(host,8345);
             System.out.println("here1");
             dsock.send(dpack);
             System.out.println("sent packet");
@@ -128,6 +129,9 @@ public class BackendServer {
             return result;
         }
     }
+
+
+
     public void sendHeader(int size) {
         // 16 bits for source port, 16 bits for destination port
         // 32 bits for sequence number
