@@ -29,8 +29,7 @@ public class BackendServer {
             int packSize = dpack.getLength();
             String s2 = new String(arr2, 0, packSize);
             System.out.println(s2);
-            if (s2.startsWith("Send this file:"))
-            {
+            if (s2.startsWith("Send this file:")) {
                 System.out.println("inside file send statement");
                 try {
                     String filepath = s2.substring(15,s2.length());
@@ -42,7 +41,9 @@ public class BackendServer {
                     System.out.println("received packet and sending response");
                     DatagramSocket checkSock = new DatagramSocket();
                     System.out.println("ADDRESS: " + dpack.getAddress());
-                    InetAddress iaddr = InetAddress.getByName("128.237.137.96");
+//                    InetAddress iaddr = InetAddress.getByName("128.237.137.96");
+                    InetAddress iaddr = dpack.getAddress();
+                    System.out.println(iaddr.toString());
                     checkSock.connect(iaddr, 8345);
                     DatagramPacket responsePacket = new DatagramPacket(filearray, filearray.length );
                     checkSock.send(responsePacket);
