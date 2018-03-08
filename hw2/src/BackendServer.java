@@ -7,6 +7,7 @@ import static java.lang.Integer.parseInt;
 public class BackendServer {
 
     private static String filename;
+    private static DatagramSocket dsock1;
     private static DatagramSocket dsock;
     private Socket sock;
 
@@ -22,6 +23,7 @@ public class BackendServer {
                 String strAddr = dpack.getAddress().toString();
                 strAddr = strAddr.substring(1); // strip leading slash from address
                 InetAddress iaddr = InetAddress.getByName(strAddr);
+                System.out.println(strAddr);
                 initSock.connect(iaddr, 8345);
                 String fileSize = "File size:" + file.length();
                 byte initarr[] = fileSize.getBytes();
@@ -41,14 +43,14 @@ public class BackendServer {
     }
     public static void main( String args[]) throws Exception {
         // starter code
-        dsock = new DatagramSocket(parseInt(args[0]));
+        dsock1 = new DatagramSocket(parseInt(args[0]));
         System.out.println("backend port =" + args[0]);
         byte arr1[] = new byte[150];
         DatagramPacket dpack = new DatagramPacket(arr1, arr1.length );
 
         while(true) {
             System.out.println("waiting");
-            dsock.receive(dpack);
+            dsock1.receive(dpack);
             System.out.println("received dpack");
             byte arr2[] = dpack.getData();
             int packSize = dpack.getLength();
