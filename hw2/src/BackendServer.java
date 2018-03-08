@@ -1,3 +1,5 @@
+import com.sun.org.apache.xpath.internal.SourceTree;
+
 import java.util.Date;
 import java.net.*;
 import java.io.*;
@@ -61,6 +63,7 @@ public class BackendServer {
             boolean ack = receiveAck(dsock);
             if (ack) {
                 int i = 0;
+                System.out.println("Entering loop to get file");
                 while (i < filesize) {
                     try {
                         byte[] filearray = new byte[(int) file.length()];
@@ -80,17 +83,19 @@ public class BackendServer {
                         }
                         DatagramPacket responsePacket = new DatagramPacket(sendarr, maxSize);
                         checkSock.send(responsePacket);
-                        System.out.println("Sent response packet!");
+                        System.out.print("Sending response packet...");
                     } catch (Exception e) {
                         System.out.println(e);
                     }
                     if (receiveAck(dsock)) { // if acknowledgement is received, then continue sending fragments
+                        System.out.println("Received ack!");
                         i += maxSize;
                     }
                     else {
                         //TODO: add timeout capability
                     }
                 }
+                System.out.println("Exiting loop");
             }
             System.out.println( new Date( ) + "  " + dpack.getAddress( ) + " : " + dpack.getPort( ) + " "+ request);
 
@@ -172,14 +177,11 @@ public class BackendServer {
 
             byte[] result = new byte[length];
             int i = 0;
+            System.out.println("Entering receive loop");
             while (result.length < length) {
                 arr = new byte[40];
                 dpack = new DatagramPacket(arr, arr.length);
-                String message = "ack";
-                arr = message.getBytes( );
-                DatagramPacket ack = new DatagramPacket(arr, arr.length);
-                dsock.send(ack);
-                dsock.receive(dpack);
+                sendAck(dsock);
                 s2 = new String(filearr, 0, dpack.getLength());
                 System.out.println(s2);
                 byte barr[] = dpack.getData();
@@ -187,6 +189,7 @@ public class BackendServer {
                 {
                     result[j] = barr[j-i];
                 }
+                System.out.println("Received packet!");
                 i += 40;
                 //TODO: add ack from sender too
 //                if (ack) {
@@ -196,6 +199,7 @@ public class BackendServer {
 //                    // TODO: add timeout capability
 //                }
             }
+            System.out.println("Leaving receive loop");
             sendAck(dsock);
             return result;
         }
