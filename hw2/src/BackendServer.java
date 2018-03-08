@@ -16,22 +16,30 @@ public class BackendServer {
         this.filename = "";
         this.sock = null;
     }
-    private static void initialConnectionSetup(DatagramPacket dpack, File file) {
+    private static boolean initialConnectionSetup(DatagramPacket dpack, File file) {
         try {
             // tell client what size the file is
-            DatagramSocket initSock = new DatagramSocket();
-            String strAddr = dpack.getAddress().toString();
-            strAddr = strAddr.substring(1); // strip leading slash from address
-            InetAddress iaddr = InetAddress.getByName(strAddr);
-            initSock.connect(iaddr, 8345);
-            String fileSize = "File size:" + file.length();
-            byte initarr[] = fileSize.getBytes();
-            DatagramPacket initpack = new DatagramPacket(initarr, initarr.length);
-            initSock.send(initpack);
-            System.out.println("Sent initial packet");
+            while (true) {
+                DatagramSocket initSock = new DatagramSocket();
+                String strAddr = dpack.getAddress().toString();
+                strAddr = strAddr.substring(1); // strip leading slash from address
+                InetAddress iaddr = InetAddress.getByName(strAddr);
+                initSock.connect(iaddr, 8345);
+                String fileSize = "File size:" + file.length();
+                byte initarr[] = fileSize.getBytes();
+                DatagramPacket initpack = new DatagramPacket(initarr, initarr.length);
+                initSock.send(initpack);
+                System.out.println("Sent initial packet");
+                boolean ack = receiveAck(dsock);
+                if (ack)
+                {
+                    return true;
+                }
+            }
         }
         catch (Exception e) {
             System.out.println(e);
+            return false;
         }
     }
     public static void main( String args[]) throws Exception {
@@ -40,27 +48,28 @@ public class BackendServer {
         byte sendarr[] = new byte[maxSize];
         File file = new File("");
 
-        dsock = new DatagramSocket(parseInt(args[0]));
+        DatagramSocket dsock1 = new DatagramSocket(parseInt(args[0]));
         System.out.println("backend port =" + args[0]);
         byte arr1[] = new byte[150];
         DatagramPacket dpack = new DatagramPacket(arr1, arr1.length );
 
         while(true) {
             System.out.println("waiting");
-            dsock.receive(dpack);
+            dsock1.receive(dpack);
             System.out.println("received dpack");
             byte arr2[] = dpack.getData();
             int packSize = dpack.getLength();
             String request = new String(arr2, 0, packSize);
             System.out.println(request);
 
+            boolean ack = false;
             if (request.startsWith("Send this file:")) {
                 String filepath = request.substring(15, request.length());
                 file = new File(filepath);
                 filesize = (int)file.length();
-                initialConnectionSetup(dpack, file);
+                ack = initialConnectionSetup(dpack, file);
             }
-            boolean ack = receiveAck(dsock);
+
             if (ack) {
                 int i = 0;
                 System.out.println("Entering loop to get file");
@@ -131,6 +140,7 @@ public class BackendServer {
         byte[] arr = new byte[150];
         DatagramPacket dpack = new DatagramPacket(arr, arr.length);
         try {
+            dsock.setSoTimeout(1000);
             dsock.receive(dpack);
             byte[] data = dpack.getData();
             int length = dpack.getLength();
@@ -154,7 +164,7 @@ public class BackendServer {
             byte arr[] = message1.getBytes( );
             DatagramPacket dpack = new DatagramPacket(arr, arr.length);
             //byte[] ipAddr = new byte[]{(byte)128, (byte)2, 13, (byte)145};
-            InetAddress host = InetAddress.getByName("128.2.13.145");
+            InetAddress host = InetAddress.getByName("128.2.13.138");
             //InetAddress host = InetAddress.getByAddress(ipAddr);
 
             System.out.println("here2");
