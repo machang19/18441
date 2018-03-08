@@ -48,7 +48,7 @@ public class BackendServer {
             System.out.println(host);
             System.out.println(filename);
             InetAddress hostAddress = InetAddress.getByName(host);
-            //this.dsock = new DatagramSocket(port,hostAddress);
+            this.dsock = new DatagramSocket(port,hostAddress);
             System.out.println("connected");
         }
         catch (Exception e){
@@ -60,9 +60,16 @@ public class BackendServer {
 
         byte[] result = {};
         try {
+            System.out.println("trying to send");
             String message1 = "Send this file:" + this.filename;
             byte arr[] = message1.getBytes( );
             DatagramPacket dpack = new DatagramPacket(arr, arr.length);
+            byte[] ipAddr = new byte[]{(byte)128, (byte)237, 125, (byte)153};
+            //InetAddress host = InetAddress.getByAddress("128.237.125.153");
+            InetAddress host = InetAddress.getByAddress(ipAddr);
+            System.out.println("here2");
+            this.dsock = new DatagramSocket(8345,host);
+            System.out.println("here1");
             dsock.send(dpack);
             System.out.println("sent packet");
             dsock.receive(dpack);
@@ -70,8 +77,9 @@ public class BackendServer {
             byte filearr[] = dpack.getData();
             return filearr;
         }
-        catch (IOException e)
+        catch (Exception e)
         {
+            System.out.println(e);
             return result;
         }
     }
