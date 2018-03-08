@@ -16,15 +16,17 @@ public class BackendServer {
         this.sock = null;
     }
     private static boolean initialConnectionSetup(DatagramPacket dpack, File file) {
+        System.out.print("Initializing connection...");
         try {
             // tell client what size the file is
             while (true) {
                 DatagramSocket initSock = new DatagramSocket();
                 String strAddr = dpack.getAddress().toString();
                 strAddr = strAddr.substring(1); // strip leading slash from address
-                InetAddress iaddr = InetAddress.getByName("128.237.221.52");
+                InetAddress iaddr = InetAddress.getByName("128.237.160.226");
                 System.out.println(strAddr);
-                initSock.connect(iaddr, 8345);
+                initSock.connect(iaddr, 8345)
+                System.out.println("Connected!");;
                 String fileSize = "File size:" + file.length();
                 byte initarr[] = fileSize.getBytes();
                 DatagramPacket initpack = new DatagramPacket(initarr, initarr.length);
@@ -135,20 +137,17 @@ public class BackendServer {
         }
     }
     public byte[] getContent(int start, int end) {
-
+        System.out.println("inside getContent()");
         byte[] result = {};
         try {
             System.out.println("trying to send");
             String message1 = "Send this file:" + "small.ogv";
             byte arr[] = message1.getBytes( );
             DatagramPacket dpack = new DatagramPacket(arr, arr.length);
-            byte[] ipAddr = new byte[]{(byte)128, (byte)2,13, (byte)188};
-            //InetAddress host = InetAddress.getByAddress("128.237.125.153");
-            InetAddress host = InetAddress.getByAddress(ipAddr);
-            System.out.println("here2");
+            InetAddress host = InetAddress.getByName("128.2.13.138");
             this.dsock = new DatagramSocket();
             this.dsock.connect(host,8345);
-            System.out.println("here1");
+            System.out.println("connected to DatagramSocket");
             dsock.send(dpack);
             System.out.println("sent packet");
             dsock.receive(dpack);
