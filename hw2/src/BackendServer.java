@@ -19,7 +19,7 @@ public class BackendServer {
         this.filename = "";
         this.sock = null;
     }
-    private static void initialConnectionSetup(DatagramPacket dpack, File file) {
+    private static void initialConnectionSetup(DatagramPacket dpack, File file, int port) {
         try {
             // tell client what size the file is
             DatagramSocket initSock = new DatagramSocket();
@@ -29,7 +29,7 @@ public class BackendServer {
             //InetAddress host = InetAddress.getByName("128.237.205.32");
             String fileSize = "File size:" + file.length();
             byte initarr[] = fileSize.getBytes();
-            DatagramPacket initpack = new DatagramPacket(initarr, initarr.length, host, 8345);
+            DatagramPacket initpack = new DatagramPacket(initarr, initarr.length, host, port);
             initSock.send(initpack);
             initSock.close();
             System.out.println("Sent initial packet");
@@ -65,7 +65,7 @@ public class BackendServer {
                 String filepath = request.substring(15, request.length());
                 file = new File(filepath);
                 filesize = (int)file.length();
-                initialConnectionSetup(dpack, file);
+                initialConnectionSetup(dpack, file, port);
                 System.out.println("Address: " + dpack.getAddress());
                 System.out.println("Port: " + dpack.getPort());
                 boolean ack = receiveAck(dpack.getAddress(), port, checkSock);
@@ -98,7 +98,7 @@ public class BackendServer {
                             for (int j = i; j < Integer.min(i+maxSize-20, filesize); j++) {
                                 sendarr[j-i+iarr.length] = filearray[j];
                             }
-                            DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, 8345);
+                            DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, port);
                             checkSock.send(responsePacket);
 
                             //System.out.println("Sent response packet!");
@@ -184,7 +184,7 @@ public class BackendServer {
             byte arr[] = message1.getBytes( );
 
             //InetAddress host = InetAddress.getByName("128.2.13.137");
-	        DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, 8345);
+	        DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, port);
 
             System.out.println("here2");
             dsock = new DatagramSocket();
