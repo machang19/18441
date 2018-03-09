@@ -35,7 +35,7 @@ public class BackendServer {
     }
     public static void main( String args[]) throws Exception {
         int filesize = 0;
-        int maxSize = 40; // maximum packet size is 40 Bytes (for now)
+        int maxSize = 60; // maximum packet size is 40 Bytes (for now)
         byte sendarr[] = new byte[maxSize];
         File file = new File("");
 
@@ -78,16 +78,22 @@ public class BackendServer {
                             //InetAddress host = InetAddress.getByName(strAddr);
                             //InetAddress host = dpack.getAddress();
                             InetAddress host = InetAddress.getByName("128.237.205.32");
+                            String index = i + "startindex";
+                            byte iarr[] = index.getBytes();
                             System.out.println("Host: " + strAddr);
+                            for (int k = 0; k < iarr.length; k++)
+                            {
+                                sendarr[k] = iarr[k];
+                            }
                             for (int j = i; j < i+40; j++) {
-                                sendarr[j-i] = filearray[j];
+                                sendarr[j-i+iarr.length] = filearray[j];
                             }
                             DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, 8345);
                             checkSock.send(responsePacket);
                             checkSock.close();
                             System.out.println("Sent response packet!");
                             if (receiveAck(host, 8345)) {
-                                i += maxSize;
+                                i += maxSize-20;
                             }
                         } catch (Exception e) {
                             System.out.println(e);
@@ -135,11 +141,8 @@ public class BackendServer {
             dsock2 = new DatagramSocket(port);
             System.out.println("created new dsock");
     	    dsock2.setSoTimeout(1000);
-            System.out.println("Timeout");
             dsock2.receive(dpack);
-            System.out.println("after receive");
             dsock2.close();
-            System.out.println("after close");
             byte[] data = dpack.getData();
             int length = dpack.getLength();
             String ack = new String(data, 0, length);
@@ -196,16 +199,18 @@ public class BackendServer {
                 dsock2.receive(dpack);
                 dsock2.close();
                 System.out.println("Packet received");
-                //s2 = new String(filearr, 0, dpack.getLength());
+                s2 = new String(filearr, 0, dpack.getLength());
+                i = parseInt(s2.split("startindex")[0]);
+                int offset = s2.indexOf("startindex") + 10;
                 //System.out.println("Packet: " + s2);
                 byte barr[] = dpack.getData();
                 System.out.println("Before copy loop");
-                for (int j = i; j < i + dpack.getLength(); j++)
+                for (int j = i; j < i + dpack.getLength() - offset; j++)
                 {
-                    result[j] = barr[j-i];
+                    result[j] = barr[j-i+offset];
                 }
                 System.out.println("After copy loop");
-                i += 40;
+
             }
             sendAck(host, 8345);
             return result;
