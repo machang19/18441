@@ -21,7 +21,7 @@ public class BackendServer {
             String strAddr = dpack.getAddress().toString();
             strAddr = strAddr.substring(1); // strip leading slash from address
 //            InetAddress host = InetAddress.getByName(strAddr);
-            InetAddress host = InetAddress.getByName("128.237.160.226");
+            InetAddress host = InetAddress.getByName("128.237.205.32");
             String fileSize = "File size:" + file.length();
             byte initarr[] = fileSize.getBytes();
             DatagramPacket initpack = new DatagramPacket(initarr, initarr.length, host, 8345);
@@ -59,6 +59,8 @@ public class BackendServer {
                 file = new File(filepath);
                 filesize = (int)file.length();
                 initialConnectionSetup(dpack, file);
+                System.out.println("Address: " + dpack.getAddress());
+                System.out.println("Port: " + dpack.getPort());
                 boolean ack = receiveAck(dpack.getAddress(), dpack.getPort());
                 if (ack) {
                     int i = 0;
@@ -110,11 +112,12 @@ public class BackendServer {
         }
     }
     private void sendAck(InetAddress host, int port) {
+        System.out.println("Trying to send ack");
         try {
             String message = "ack";
             byte arr[] = message.getBytes();
             DatagramPacket ack = new DatagramPacket(arr, arr.length, host, port);
-	        DatagramSocket dsock2 = new DatagramSocket(port);
+	        DatagramSocket dsock2 = new DatagramSocket();
             dsock2.send(ack);
             dsock2.close();
         }
@@ -139,6 +142,7 @@ public class BackendServer {
             }
         }
         catch (Exception e) {
+            System.out.println("Receive ack exception");
             System.out.println(e);
             return false;
         }
@@ -151,7 +155,7 @@ public class BackendServer {
             System.out.println(message1);
             byte arr[] = message1.getBytes( );
             
-            InetAddress host = InetAddress.getByName("128.2.13.137");
+            InetAddress host = InetAddress.getByName("128.2.13.144");
 	        DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, 8345);
 
             System.out.println("here2");
