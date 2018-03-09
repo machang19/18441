@@ -82,7 +82,7 @@ public class BackendServer {
                             for (int j = i; j < i+40; j++) {
                                 sendarr[j-i] = filearray[j];
                             }
-                            DatagramPacket responsePacket = new DatagramPacket(sendarr, maxSize, host, 8345);
+                            DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, 8345);
                             checkSock.send(responsePacket);
                             checkSock.close();
                             System.out.println("Sent response packet!");
@@ -127,15 +127,19 @@ public class BackendServer {
             System.out.println(e);
         }
     }
-    private static boolean receiveAck(InetAddress host, int port) {
+    private static boolean receiveAck(InetAddress host, int port) throws Exception{
         byte[] arr = new byte[150];
-	    DatagramSocket dsock2;
+	    DatagramSocket dsock2 = new DatagramSocket();
         DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, port);
         try {
             dsock2 = new DatagramSocket(port);
+            System.out.println("created new dsock");
     	    dsock2.setSoTimeout(1000);
+            System.out.println("Timeout");
             dsock2.receive(dpack);
+            System.out.println("after receive");
             dsock2.close();
+            System.out.println("after close");
             byte[] data = dpack.getData();
             int length = dpack.getLength();
             String ack = new String(data, 0, length);
@@ -147,7 +151,7 @@ public class BackendServer {
         catch (Exception e) {
             System.out.println("Receive ack exception");
             System.out.println(e);
-            dsock.close();
+            dsock2.close();
             return false;
         }
         return false;
@@ -177,31 +181,31 @@ public class BackendServer {
             System.out.println("received packet");
             byte filearr[] = dpack.getData();
             String s2 = new String(filearr, 10, dpack.getLength()-10);
-            System.out.println(s2);
+            System.out.println("length: " + s2);
             int length = parseInt(s2);
 
             byte[] result = new byte[length];
             int i = 0;
-            while (result.length < length) {
+            while (i < length) {
+                System.out.println("Outer loop, i=" + i);
                 arr = new byte[40];
                 dpack = new DatagramPacket(arr, arr.length);
                 sendAck(host, 8345);
-                dsock.receive(dpack);
-                s2 = new String(filearr, 0, dpack.getLength());
-                System.out.println(s2);
+                System.out.println("Ack was sent");
+                dsock2 = new DatagramSocket(8345);
+                dsock2.receive(dpack);
+                dsock2.close();
+                System.out.println("Packet received");
+                //s2 = new String(filearr, 0, dpack.getLength());
+                //System.out.println("Packet: " + s2);
                 byte barr[] = dpack.getData();
+                System.out.println("Before copy loop");
                 for (int j = i; j < i + dpack.getLength(); j++)
                 {
                     result[j] = barr[j-i];
                 }
+                System.out.println("After copy loop");
                 i += 40;
-                //TODO: add ack from sender too
-//                if (ack) {
-//                    i += 40;
-//                }
-//                else {
-//                    // TODO: add timeout capability
-//                }
             }
             sendAck(host, 8345);
             return result;
