@@ -75,8 +75,9 @@ public class BackendServer {
                             DatagramSocket checkSock = new DatagramSocket();
                             String strAddr = dpack.getAddress().toString();
                             strAddr = strAddr.substring(1); // strip leading slash from address
-                            InetAddress host = InetAddress.getByName(strAddr);
-
+                            //InetAddress host = InetAddress.getByName(strAddr);
+                            InetAddress host = dpack.getAddress();
+                            System.out.println("Host: " + strAddr);
                             for (int j = i; j < i+40; j++) {
                                 sendarr[j-i] = filearray[j];
                             }
@@ -127,9 +128,10 @@ public class BackendServer {
     }
     private static boolean receiveAck(InetAddress host, int port) {
         byte[] arr = new byte[150];
+	    DatagramSocket dsock2;
         DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, port);
-        try {    
-	        DatagramSocket dsock2 = new DatagramSocket(port);
+        try {
+            dsock2 = new DatagramSocket(port);
     	    dsock2.setSoTimeout(1000);
             dsock2.receive(dpack);
             dsock2.close();
@@ -144,6 +146,7 @@ public class BackendServer {
         catch (Exception e) {
             System.out.println("Receive ack exception");
             System.out.println(e);
+            dsock.close();
             return false;
         }
         return false;
@@ -154,7 +157,7 @@ public class BackendServer {
             String message1 = "Send this file:" + "small.ogv";
             System.out.println(message1);
             byte arr[] = message1.getBytes( );
-            
+
             InetAddress host = InetAddress.getByName("128.2.13.144");
 	        DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, 8345);
 
@@ -175,7 +178,6 @@ public class BackendServer {
             String s2 = new String(filearr, 10, dpack.getLength()-10);
             System.out.println(s2);
             int length = parseInt(s2);
-            sendAck(host, 8345);
 
             byte[] result = new byte[length];
             int i = 0;
