@@ -35,7 +35,7 @@ public class BackendServer {
     }
     public static void main( String args[]) throws Exception {
         int filesize = 0;
-        int maxSize = 1020; // maximum packet size is 40 Bytes (for now)
+        int maxSize = 100020; // maximum packet size is 40 Bytes (for now)
         byte sendarr[] = new byte[maxSize];
         File file = new File("");
 
@@ -192,9 +192,9 @@ public class BackendServer {
 
             byte[] result = new byte[length];
             int i = 0;
-            while (i < length-1020) {
+            while (i < length-100020) {
                 System.out.println("Outer loop, i=" + i);
-                arr = new byte[1020];
+                arr = new byte[100020];
                 dpack = new DatagramPacket(arr, arr.length);
                 sendAck(host, 8345);
                 //System.out.println("Ack was sent");
