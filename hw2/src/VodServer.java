@@ -122,8 +122,9 @@ public class VodServer {
                     return;
              }
              else if (peerInfo[2].equals("view")) {
+                 filepath = peerInfo[3];
                  System.out.println("viewing");
-                 filearr = bServer.getContent(0,0);
+                 filearr = bServer.getContent(0,0, filepath);
                  System.out.println(filearr);// 0, 0 are dummy args dont do anything yet
              }
              else if (peerInfo[2].substring(0,6).equals("config")) {
