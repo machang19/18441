@@ -86,7 +86,7 @@ public class BackendServer {
                             {
                                 sendarr[k] = iarr[k];
                             }
-                            for (int j = i; j < i+maxSize-20; j++) {
+                            for (int j = i; j < Integer.min(i+maxSize-20, filesize); j++) {
                                 sendarr[j-i+iarr.length] = filearray[j];
                             }
                             DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, 8345);
