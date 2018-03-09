@@ -137,7 +137,7 @@ public class BackendServer {
             int length = dpack.getLength();
             String ack = new String(data, 0, length);
             System.out.println(ack);
-            if (ack.substring(0,3) == "ack") {
+            if (ack.substring(0,3).equals("ack")) {
                 return true;
             }
         }
