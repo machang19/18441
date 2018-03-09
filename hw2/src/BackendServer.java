@@ -76,7 +76,8 @@ public class BackendServer {
                             String strAddr = dpack.getAddress().toString();
                             strAddr = strAddr.substring(1); // strip leading slash from address
                             //InetAddress host = InetAddress.getByName(strAddr);
-                            InetAddress host = dpack.getAddress();
+                            //InetAddress host = dpack.getAddress();
+                            InetAddress host = InetAddress.getByName("128.237.205.32");
                             System.out.println("Host: " + strAddr);
                             for (int j = i; j < i+40; j++) {
                                 sendarr[j-i] = filearray[j];
@@ -158,7 +159,7 @@ public class BackendServer {
             System.out.println(message1);
             byte arr[] = message1.getBytes( );
 
-            InetAddress host = InetAddress.getByName("128.2.13.144");
+            InetAddress host = InetAddress.getByName("128.2.13.137");
 	        DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, 8345);
 
             System.out.println("here2");
