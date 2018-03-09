@@ -55,20 +55,21 @@ public class BackendServer {
             System.out.println(request);
 
             if (request.startsWith("Send this file:")) {
+                DatagramSocket checkSock = new DatagramSocket(8345);
                 String filepath = request.substring(15, request.length());
                 file = new File(filepath);
                 filesize = (int)file.length();
                 initialConnectionSetup(dpack, file);
                 System.out.println("Address: " + dpack.getAddress());
                 System.out.println("Port: " + dpack.getPort());
-                boolean ack = receiveAck(dpack.getAddress(), 8345);
+                boolean ack = receiveAck(dpack.getAddress(), 8345, checkSock);
                 if (ack) {
                     int i = 0;
                     byte[] filearray = new byte[(int) file.length()];
                     FileInputStream fis = new FileInputStream(file);
                     BufferedInputStream bis = new BufferedInputStream(fis);
                     bis.read(filearray, 0, filearray.length);
-                    DatagramSocket checkSock = new DatagramSocket();
+
                     while (i < filesize) {
                         System.out.println("in main function, i=" + i);
                         try {
@@ -95,15 +96,15 @@ public class BackendServer {
                             checkSock.send(responsePacket);
 
                             //System.out.println("Sent response packet!");
-                            if (receiveAck(host, 8345)) {
+                            if (receiveAck(host, 8345, checkSock)) {
                                 i += maxSize-20;
                             }
                         } catch (Exception e) {
                             System.out.println(e);
                         }
                     }
-                    checkSock.close();
                 }
+                checkSock.close();
                 System.out.println( new Date( ) + "  " + dpack.getAddress( ) + " : " + dpack.getPort( ) + " "+ request);
             }
         }
@@ -123,30 +124,25 @@ public class BackendServer {
             System.out.println("Could not find host " + host + "on port " + port);
         }
     }
-    private void sendAck(InetAddress host, int port) {
+    private void sendAck(InetAddress host, int port, DatagramSocket dsock) {
         //System.out.println("Trying to send ack");
         try {
             String message = "ack";
             byte arr[] = message.getBytes();
             DatagramPacket ack = new DatagramPacket(arr, arr.length, host, port);
-	        DatagramSocket dsock2 = new DatagramSocket();
-            dsock2.send(ack);
-            dsock2.close();
+            dsock.send(ack);
         }
         catch (Exception e) {
             System.out.println(e);
         }
     }
-    private static boolean receiveAck(InetAddress host, int port) throws Exception{
+    private static boolean receiveAck(InetAddress host, int port, DatagramSocket dsock) throws Exception{
         byte[] arr = new byte[150];
-	    DatagramSocket dsock2 = new DatagramSocket();
         DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, port);
         try {
-            dsock2 = new DatagramSocket(port);
             //System.out.println("created new dsock");
-    	    dsock2.setSoTimeout(1000);
-            dsock2.receive(dpack);
-            dsock2.close();
+    	    dsock.setSoTimeout(1000);
+            dsock.receive(dpack);
             byte[] data = dpack.getData();
             int length = dpack.getLength();
             String ack = new String(data, 0, length);
@@ -158,7 +154,6 @@ public class BackendServer {
         catch (Exception e) {
             System.out.println("Receive ack exception");
             System.out.println(e);
-            dsock2.close();
             return false;
         }
         return false;
@@ -198,7 +193,7 @@ public class BackendServer {
                 System.out.println("Outer loop, i=" + i);
                 arr = new byte[1020];
                 dpack = new DatagramPacket(arr, arr.length);
-                sendAck(host, 8345);
+                sendAck(host, 8345, dsock2);
                 //System.out.println("Ack was sent");
 
                 dsock2.receive(dpack);
@@ -217,8 +212,8 @@ public class BackendServer {
                 //System.out.println("After copy loop");
 
             }
+            sendAck(host, 8345, dsock2);
             dsock2.close();
-            sendAck(host, 8345);
             System.out.println("returning");
             return result;
         }
