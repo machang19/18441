@@ -14,7 +14,7 @@ public class BackendServer {
     private static DatagramSocket dsock;
     private Socket sock;
     private  ConcurrentMap<String, CopyOnWriteArrayList<InetAddress>> fileLookup = new ConcurrentHashMap<>();
-    private ConcurrentMap<InetAddress, Integer> portLookup;
+    private ConcurrentMap<InetAddress, Integer> portLookup = new ConcurrentHashMap<>();
     public BackendServer() {
         this.filename = "";
         this.sock = null;
@@ -178,7 +178,7 @@ public class BackendServer {
         try {
             System.out.println("trying to send");
             InetAddress host = fileLookup.get(filename).get(0);
-            int port = portLookup.get(filename);
+            int port = portLookup.get(host);
             String message1 = "Send this file:" + filename;
             System.out.println(message1);
             byte arr[] = message1.getBytes( );

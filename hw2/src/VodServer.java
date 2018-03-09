@@ -125,6 +125,12 @@ public class VodServer {
                  filepath = peerInfo[3];
                  System.out.println("viewing");
                  filearr = bServer.getContent(0,0, filepath);
+                 try {
+                     view(filepath, filearr, out, clientSocket);
+                 }
+                 catch (Exception e) {
+                     System.out.println(e);
+                 }
                  System.out.println(filearr);// 0, 0 are dummy args dont do anything yet
              }
              else if (peerInfo[2].substring(0,6).equals("config")) {
@@ -213,6 +219,22 @@ public class VodServer {
          in.close();
          clientSocket.close();
      }
+
+    private static void view(String filepath, byte[] filearr, DataOutputStream out, Socket clientSocket) throws Exception {
+        OutputStream os = null;
+        SimpleDateFormat dateFormat = new SimpleDateFormat(
+                "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+        String time = dateFormat.format(Calendar.getInstance().getTime());
+        os = clientSocket.getOutputStream();
+        out.writeBytes("HTTP/1.1 200 OK\r\n");
+        out.writeBytes("Date: " + time + "\r\n");
+        out.writeBytes("Connection: Keep-Alive\r\n");
+        out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
+        System.out.println(getContentType(filepath));
+        os.write(filearr, 0, filearr.length);
+        System.out.println("Done.");
+    }
 
     private static Map<String,String> parse_uri(String uri) {
         Map<String,String> result = new HashMap<>();
