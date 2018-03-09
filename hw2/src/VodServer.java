@@ -41,7 +41,6 @@ public class VodServer {
         Socket clientSocket = null;
         System.out.println("Waiting for connection.....");
         while (true) {
-            System.out.println("BEGINNING OF VODSERVER LOOP");
             try {
                 clientSocket = serverSocket.accept();
 
@@ -54,7 +53,6 @@ public class VodServer {
                 Socket finalCS = clientSocket;
                 threadPool.submit(() -> {
                     try {
-                        System.out.println("CREATING NEW THREAD");
                         serve(finalCS);
                     }
                     catch (IOException e) {
@@ -87,8 +85,7 @@ public class VodServer {
     }
 
     public static void serve(Socket clientSocket) throws IOException {
-        System.out.println("Connection successful");
-        System.out.println("Waiting for input.....");
+        System.out.println("Connection successful. Waiting for input.....");
         DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
         BufferedReader in = new BufferedReader(
                 new InputStreamReader(clientSocket.getInputStream()));

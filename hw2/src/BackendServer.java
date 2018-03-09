@@ -103,19 +103,12 @@ public class BackendServer {
                                 bytesSent = 0;
                             }
                             InetAddress host = dpack.getAddress();
-                            //strAddr = strAddr.substring(1); // strip leading slash from address
-                            //InetAddress host = InetAddress.getByName(strAddr);
-                            //InetAddress host = dpack.getAddress();
-                            //InetAddress host = InetAddress.getByName("128.237.205.32");
                             String index = i + "startindex";
                             byte iarr[] = index.getBytes();
-                            //System.out.println("Host: " + strAddr);
-                            //System.out.println("before k loop");
                             for (int k = 0; k < iarr.length; k++)
                             {
                                 sendarr[k] = iarr[k];
                             }
-                            //System.out.println("before j loop");
                             for (int j = i; j < Integer.min(i+maxSize-20, filesize); j++) {
                                 sendarr[j-i+iarr.length] = filearray[j];
                             }
@@ -123,7 +116,6 @@ public class BackendServer {
                             checkSock.send(responsePacket);
                             bytesSent += maxSize;
 
-                            //System.out.println("Sent response packet!");
                             if (receiveAck(host, port, checkSock)) {
                                 i += maxSize-20;
                             }
@@ -178,13 +170,11 @@ public class BackendServer {
         byte[] arr = new byte[150];
         DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, port);
         try {
-            //System.out.println("created new dsock");
             dsock.setSoTimeout(1000);
             dsock.receive(dpack);
             byte[] data = dpack.getData();
             int length = dpack.getLength();
             String ack = new String(data, 0, length);
-            //System.out.println(ack);
             if (ack.substring(0,3).equals("ack")) {
                 return true;
             }
@@ -199,17 +189,12 @@ public class BackendServer {
     public byte[] getContent(int start, int end, String filename) {
         try {
             System.out.println("trying to send");
-            System.out.println(fileLookup.get(filename));
             InetAddress host = fileLookup.get(filename).get(0);
-            System.out.println("after filelookup");
             int port = portLookup.get(host);
-            System.out.println("Host: " + host);
-            System.out.println("Port: " + port);
+
             String message1 = "Send this file:" + filename;
             System.out.println(message1);
             byte arr[] = message1.getBytes( );
-
-            //InetAddress host = InetAddress.getByName("128.2.13.137");
             DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, port);
 
             dsock = new DatagramSocket();
@@ -279,7 +264,5 @@ public class BackendServer {
 
     public void setRate(int rate) {
         this.bandwidth = rate;
-        System.out.println(this.bandwidth);
-        System.out.println(bandwidth);
     }
 }
