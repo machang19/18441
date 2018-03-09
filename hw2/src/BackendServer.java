@@ -35,7 +35,7 @@ public class BackendServer {
     }
     public static void main( String args[]) throws Exception {
         int filesize = 0;
-        int maxSize = 60; // maximum packet size is 40 Bytes (for now)
+        int maxSize = 1020; // maximum packet size is 40 Bytes (for now)
         byte sendarr[] = new byte[maxSize];
         File file = new File("");
 
@@ -65,13 +65,14 @@ public class BackendServer {
                 if (ack) {
                     int i = 0;
                     while (i < filesize) {
+                        System.out.println("in main function, i=" + i);
                         try {
                             byte[] filearray = new byte[(int) file.length()];
                             FileInputStream fis = new FileInputStream(file);
                             BufferedInputStream bis = new BufferedInputStream(fis);
                             bis.read(filearray, 0, filearray.length);
 
-                            System.out.println("received packet and sending response");
+                            //System.out.println("received packet and sending response");
                             DatagramSocket checkSock = new DatagramSocket();
                             String strAddr = dpack.getAddress().toString();
                             strAddr = strAddr.substring(1); // strip leading slash from address
@@ -80,12 +81,12 @@ public class BackendServer {
                             InetAddress host = InetAddress.getByName("128.237.205.32");
                             String index = i + "startindex";
                             byte iarr[] = index.getBytes();
-                            System.out.println("Host: " + strAddr);
+                            //System.out.println("Host: " + strAddr);
                             for (int k = 0; k < iarr.length; k++)
                             {
                                 sendarr[k] = iarr[k];
                             }
-                            for (int j = i; j < i+40; j++) {
+                            for (int j = i; j < i+maxSize-20; j++) {
                                 sendarr[j-i+iarr.length] = filearray[j];
                             }
                             DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, 8345);
@@ -191,7 +192,7 @@ public class BackendServer {
             int i = 0;
             while (i < length) {
                 System.out.println("Outer loop, i=" + i);
-                arr = new byte[40];
+                arr = new byte[1020];
                 dpack = new DatagramPacket(arr, arr.length);
                 sendAck(host, 8345);
                 System.out.println("Ack was sent");
@@ -199,7 +200,7 @@ public class BackendServer {
                 dsock2.receive(dpack);
                 dsock2.close();
                 System.out.println("Packet received");
-                s2 = new String(filearr, 0, dpack.getLength());
+                s2 = new String(dpack.getData(), 0, dpack.getLength());
                 i = parseInt(s2.split("startindex")[0]);
                 int offset = s2.indexOf("startindex") + 10;
                 //System.out.println("Packet: " + s2);
