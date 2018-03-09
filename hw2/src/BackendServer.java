@@ -61,7 +61,7 @@ public class BackendServer {
                 initialConnectionSetup(dpack, file);
                 System.out.println("Address: " + dpack.getAddress());
                 System.out.println("Port: " + dpack.getPort());
-                boolean ack = receiveAck(dpack.getAddress(), dpack.getPort());
+                boolean ack = receiveAck(dpack.getAddress(), 8345);
                 if (ack) {
                     int i = 0;
                     while (i < filesize) {
@@ -137,7 +137,7 @@ public class BackendServer {
             int length = dpack.getLength();
             String ack = new String(data, 0, length);
             System.out.println(ack);
-            if (ack == "ack") {
+            if (ack.substring(0,3) == "ack") {
                 return true;
             }
         }
