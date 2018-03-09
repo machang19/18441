@@ -21,15 +21,20 @@ public class BackendServer {
     private static void initialConnectionSetup(DatagramPacket dpack, File file, int port) {
         try {
             // tell client what size the file is
+            System.out.println("Creating new dsock");
             DatagramSocket initSock = new DatagramSocket();
             InetAddress host = dpack.getAddress();
+            System.out.println("Got address");
            // strAddr = strAddr.substring(1); // strip leading slash from address
 //            InetAddress host = InetAddress.getByName(strAddr);
             //InetAddress host = InetAddress.getByName("128.237.205.32");
             String fileSize = "File size:" + file.length();
             byte initarr[] = fileSize.getBytes();
+            System.out.println("Before creating dpack");
             DatagramPacket initpack = new DatagramPacket(initarr, initarr.length, host, port);
+            System.out.println("Before sending dpack");
             initSock.send(initpack);
+            System.out.println("Closing socket");
             initSock.close();
             System.out.println("Sent initial packet");
         }
@@ -49,10 +54,9 @@ public class BackendServer {
 
             System.out.println("waiting");
             dsock4.receive(dpack);
-            dsock4.close();
             threadPool.submit(() -> {
                 try {
-                    serve(dpack,port);
+                    serve(dsock4,dpack,port);
                 }
                 catch (Exception e) {
                     System.out.println(e);
@@ -62,7 +66,7 @@ public class BackendServer {
         }
     }
 
-    private static void serve(DatagramPacket dpack,int port) throws Exception{
+    private static void serve(DatagramSocket dsock, DatagramPacket dpack,int port) throws Exception{
         int filesize = 0;
         int maxSize = 1020; // maximum packet size is 40 Bytes (for now)
         byte sendarr[] = new byte[maxSize];
@@ -74,14 +78,14 @@ public class BackendServer {
         System.out.println(request);
 
         if (request.startsWith("Send this file:")) {
-            DatagramSocket checkSock = new DatagramSocket(port);
             String filepath = request.substring(15, request.length());
             file = new File(filepath);
             filesize = (int)file.length();
+            System.out.println("Before entering initialConnectionSetup");
             initialConnectionSetup(dpack, file, port);
             System.out.println("Address: " + dpack.getAddress());
             System.out.println("Port: " + dpack.getPort());
-            boolean ack = receiveAck(dpack.getAddress(), port, checkSock);
+            boolean ack = receiveAck(dpack.getAddress(), port, dsock);
             if (ack) {
                 int i = 0;
                 byte[] filearray = new byte[(int) file.length()];
@@ -112,10 +116,10 @@ public class BackendServer {
                             sendarr[j-i+iarr.length] = filearray[j];
                         }
                         DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, port);
-                        checkSock.send(responsePacket);
+                        dsock.send(responsePacket);
 
                         //System.out.println("Sent response packet!");
-                        if (receiveAck(host, port, checkSock)) {
+                        if (receiveAck(host, port, dsock)) {
                             i += maxSize-20;
                         }
                     } catch (Exception e) {
@@ -123,7 +127,7 @@ public class BackendServer {
                     }
                 }
             }
-            checkSock.close();
+            dsock.close();
             System.out.println( new Date( ) + "  " + dpack.getAddress( ) + " : " + dpack.getPort( ) + " "+ request);
         }
     }
