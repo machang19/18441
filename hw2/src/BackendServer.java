@@ -2,14 +2,15 @@ import java.util.Date;
 import java.net.*;
 import java.io.*;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static java.lang.Integer.parseInt;
 
 public class BackendServer {
 
     private static String filename;
-    static ExecutorService threadPool = Executors.newFixedThreadPool(12);
     private static DatagramSocket dsock;
     private Socket sock;
     private  ConcurrentMap<String, CopyOnWriteArrayList<InetAddress>> fileLookup = new ConcurrentHashMap<>();
@@ -21,20 +22,15 @@ public class BackendServer {
     private static void initialConnectionSetup(DatagramPacket dpack, File file, int port) {
         try {
             // tell client what size the file is
-            System.out.println("Creating new dsock");
             DatagramSocket initSock = new DatagramSocket();
             InetAddress host = dpack.getAddress();
-            System.out.println("Got address");
-           // strAddr = strAddr.substring(1); // strip leading slash from address
+            // strAddr = strAddr.substring(1); // strip leading slash from address
 //            InetAddress host = InetAddress.getByName(strAddr);
             //InetAddress host = InetAddress.getByName("128.237.205.32");
             String fileSize = "File size:" + file.length();
             byte initarr[] = fileSize.getBytes();
-            System.out.println("Before creating dpack");
             DatagramPacket initpack = new DatagramPacket(initarr, initarr.length, host, port);
-            System.out.println("Before sending dpack");
             initSock.send(initpack);
-            System.out.println("Closing socket");
             initSock.close();
             System.out.println("Sent initial packet");
         }
@@ -43,7 +39,10 @@ public class BackendServer {
         }
     }
     public static void main( String args[]) throws Exception {
-
+        int filesize = 0;
+        int maxSize = 1020; // maximum packet size is 40 Bytes (for now)
+        byte sendarr[] = new byte[maxSize];
+        File file = new File("");
 
         while(true) {
             DatagramSocket dsock4 = new DatagramSocket(parseInt(args[0]));
@@ -54,84 +53,68 @@ public class BackendServer {
 
             System.out.println("waiting");
             dsock4.receive(dpack);
-            threadPool.submit(() -> {
-                try {
-                    serve(dsock4,dpack,port);
-                }
-                catch (Exception e) {
-                    System.out.println(e);
-                }
-            });
+            dsock4.close();
+            System.out.println("received dpack");
+            byte arr2[] = dpack.getData();
+            int packSize = dpack.getLength();
+            String request = new String(arr2, 0, packSize);
+            System.out.println(request);
 
-        }
-    }
+            if (request.startsWith("Send this file:")) {
+                DatagramSocket checkSock = new DatagramSocket(port);
+                String filepath = request.substring(15, request.length());
+                file = new File(filepath);
+                filesize = (int)file.length();
+                initialConnectionSetup(dpack, file, port);
+                System.out.println("Address: " + dpack.getAddress());
+                System.out.println("Port: " + dpack.getPort());
+                boolean ack = receiveAck(dpack.getAddress(), port, checkSock);
+                if (ack) {
+                    int i = 0;
+                    byte[] filearray = new byte[(int) file.length()];
+                    FileInputStream fis = new FileInputStream(file);
+                    BufferedInputStream bis = new BufferedInputStream(fis);
+                    bis.read(filearray, 0, filearray.length);
 
-    private static void serve(DatagramSocket dsock, DatagramPacket dpack,int port) throws Exception{
-        int filesize = 0;
-        int maxSize = 1020; // maximum packet size is 40 Bytes (for now)
-        byte sendarr[] = new byte[maxSize];
-        File file = new File("");
-        System.out.println("received dpack");
-        byte arr2[] = dpack.getData();
-        int packSize = dpack.getLength();
-        String request = new String(arr2, 0, packSize);
-        System.out.println(request);
+                    while (i < filesize) {
+                        System.out.println("in main function, i=" + i);
+                        try {
+                            //System.out.println("received packet and sending response");
 
-        if (request.startsWith("Send this file:")) {
-            String filepath = request.substring(15, request.length());
-            file = new File(filepath);
-            filesize = (int)file.length();
-            System.out.println("Before entering initialConnectionSetup");
-            initialConnectionSetup(dpack, file, port);
-            System.out.println("Address: " + dpack.getAddress());
-            System.out.println("Port: " + dpack.getPort());
-            boolean ack = receiveAck(dpack.getAddress(), port, dsock);
-            if (ack) {
-                int i = 0;
-                byte[] filearray = new byte[(int) file.length()];
-                FileInputStream fis = new FileInputStream(file);
-                BufferedInputStream bis = new BufferedInputStream(fis);
-                bis.read(filearray, 0, filearray.length);
+                            InetAddress host = dpack.getAddress();
+                            //strAddr = strAddr.substring(1); // strip leading slash from address
+                            //InetAddress host = InetAddress.getByName(strAddr);
+                            //InetAddress host = dpack.getAddress();
+                            //InetAddress host = InetAddress.getByName("128.237.205.32");
+                            String index = i + "startindex";
+                            byte iarr[] = index.getBytes();
+                            //System.out.println("Host: " + strAddr);
+                            //System.out.println("before k loop");
+                            for (int k = 0; k < iarr.length; k++)
+                            {
+                                sendarr[k] = iarr[k];
+                            }
+                            //System.out.println("before j loop");
+                            for (int j = i; j < Integer.min(i+maxSize-20, filesize); j++) {
+                                sendarr[j-i+iarr.length] = filearray[j];
+                            }
+                            DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, port);
+                            checkSock.send(responsePacket);
 
-                while (i < filesize) {
-                    System.out.println("in main function, i=" + i);
-                    try {
-                        //System.out.println("received packet and sending response");
-
-                        InetAddress host = dpack.getAddress();
-                        //strAddr = strAddr.substring(1); // strip leading slash from address
-                        //InetAddress host = InetAddress.getByName(strAddr);
-                        //InetAddress host = dpack.getAddress();
-                        //InetAddress host = InetAddress.getByName("128.237.205.32");
-                        String index = i + "startindex";
-                        byte iarr[] = index.getBytes();
-                        //System.out.println("Host: " + strAddr);
-                        //System.out.println("before k loop");
-                        for (int k = 0; k < iarr.length; k++)
-                        {
-                            sendarr[k] = iarr[k];
+                            //System.out.println("Sent response packet!");
+                            if (receiveAck(host, port, checkSock)) {
+                                i += maxSize-20;
+                            }
+                        } catch (Exception e) {
+                            System.out.println(e);
                         }
-                        //System.out.println("before j loop");
-                        for (int j = i; j < Integer.min(i+maxSize-20, filesize); j++) {
-                            sendarr[j-i+iarr.length] = filearray[j];
-                        }
-                        DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, port);
-                        dsock.send(responsePacket);
-
-                        //System.out.println("Sent response packet!");
-                        if (receiveAck(host, port, dsock)) {
-                            i += maxSize-20;
-                        }
-                    } catch (Exception e) {
-                        System.out.println(e);
                     }
                 }
+                checkSock.close();
+                System.out.println( new Date( ) + "  " + dpack.getAddress( ) + " : " + dpack.getPort( ) + " "+ request);
             }
-            dsock.close();
-            System.out.println( new Date( ) + "  " + dpack.getAddress( ) + " : " + dpack.getPort( ) + " "+ request);
         }
     }
-
     public void addPeer(String filename, String host, int port) throws IOException {
         try {
             InetAddress hostAddress = InetAddress.getByName(host);
@@ -174,7 +157,7 @@ public class BackendServer {
         DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, port);
         try {
             //System.out.println("created new dsock");
-    	    dsock.setSoTimeout(1000);
+            dsock.setSoTimeout(1000);
             dsock.receive(dpack);
             byte[] data = dpack.getData();
             int length = dpack.getLength();
@@ -196,12 +179,14 @@ public class BackendServer {
             System.out.println("trying to send");
             InetAddress host = fileLookup.get(filename).get(0);
             int port = portLookup.get(host);
+            System.out.println("Host: " + host);
+            System.out.println("Port: " + port);
             String message1 = "Send this file:" + filename;
             System.out.println(message1);
             byte arr[] = message1.getBytes( );
 
             //InetAddress host = InetAddress.getByName("128.2.13.137");
-	        DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, port);
+            DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, port);
 
             System.out.println("here2");
             dsock = new DatagramSocket();
@@ -212,7 +197,7 @@ public class BackendServer {
             dpack = new DatagramPacket(arr, arr.length, host, port);
 
             // receive length of file
-	        DatagramSocket dsock2 = new DatagramSocket(port);
+            DatagramSocket dsock2 = new DatagramSocket(port);
             dsock2.receive(dpack);
             dsock2.close();
             System.out.println("received packet");
