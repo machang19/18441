@@ -82,17 +82,19 @@ public class BackendServer {
                             String index = i + "startindex";
                             byte iarr[] = index.getBytes();
                             //System.out.println("Host: " + strAddr);
+                            //System.out.println("before k loop");
                             for (int k = 0; k < iarr.length; k++)
                             {
                                 sendarr[k] = iarr[k];
                             }
+                            //System.out.println("before j loop");
                             for (int j = i; j < Integer.min(i+maxSize-20, filesize); j++) {
                                 sendarr[j-i+iarr.length] = filearray[j];
                             }
                             DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, 8345);
                             checkSock.send(responsePacket);
                             checkSock.close();
-                            System.out.println("Sent response packet!");
+                            //System.out.println("Sent response packet!");
                             if (receiveAck(host, 8345)) {
                                 i += maxSize-20;
                             }
@@ -121,7 +123,7 @@ public class BackendServer {
         }
     }
     private void sendAck(InetAddress host, int port) {
-        System.out.println("Trying to send ack");
+        //System.out.println("Trying to send ack");
         try {
             String message = "ack";
             byte arr[] = message.getBytes();
@@ -140,14 +142,14 @@ public class BackendServer {
         DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, port);
         try {
             dsock2 = new DatagramSocket(port);
-            System.out.println("created new dsock");
+            //System.out.println("created new dsock");
     	    dsock2.setSoTimeout(1000);
             dsock2.receive(dpack);
             dsock2.close();
             byte[] data = dpack.getData();
             int length = dpack.getLength();
             String ack = new String(data, 0, length);
-            System.out.println(ack);
+            //System.out.println(ack);
             if (ack.substring(0,3).equals("ack")) {
                 return true;
             }
@@ -163,7 +165,7 @@ public class BackendServer {
     public byte[] getContent(int start, int end) {
         try {
             System.out.println("trying to send");
-            String message1 = "Send this file:" + "small.ogv";
+            String message1 = "Send this file:" + "big_buck_bunny_480p_stereo.ogg";
             System.out.println(message1);
             byte arr[] = message1.getBytes( );
 
@@ -190,30 +192,31 @@ public class BackendServer {
 
             byte[] result = new byte[length];
             int i = 0;
-            while (i < length) {
+            while (i < length-1020) {
                 System.out.println("Outer loop, i=" + i);
                 arr = new byte[1020];
                 dpack = new DatagramPacket(arr, arr.length);
                 sendAck(host, 8345);
-                System.out.println("Ack was sent");
+                //System.out.println("Ack was sent");
                 dsock2 = new DatagramSocket(8345);
                 dsock2.receive(dpack);
                 dsock2.close();
-                System.out.println("Packet received");
+                //System.out.println("Packet received");
                 s2 = new String(dpack.getData(), 0, dpack.getLength());
                 i = parseInt(s2.split("startindex")[0]);
                 int offset = s2.indexOf("startindex") + 10;
                 //System.out.println("Packet: " + s2);
                 byte barr[] = dpack.getData();
-                System.out.println("Before copy loop");
-                for (int j = i; j < i + dpack.getLength() - offset; j++)
+                //System.out.println("Before copy loop");
+                for (int j = i; j < Integer.min(i + dpack.getLength() - offset, length); j++)
                 {
                     result[j] = barr[j-i+offset];
                 }
-                System.out.println("After copy loop");
+                //System.out.println("After copy loop");
 
             }
             sendAck(host, 8345);
+            System.out.println("returning");
             return result;
         }
         catch (Exception e)
