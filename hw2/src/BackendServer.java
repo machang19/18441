@@ -68,11 +68,12 @@ public class BackendServer {
                     FileInputStream fis = new FileInputStream(file);
                     BufferedInputStream bis = new BufferedInputStream(fis);
                     bis.read(filearray, 0, filearray.length);
+                    DatagramSocket checkSock = new DatagramSocket();
                     while (i < filesize) {
                         System.out.println("in main function, i=" + i);
                         try {
                             //System.out.println("received packet and sending response");
-                            DatagramSocket checkSock = new DatagramSocket();
+
                             String strAddr = dpack.getAddress().toString();
                             strAddr = strAddr.substring(1); // strip leading slash from address
                             //InetAddress host = InetAddress.getByName(strAddr);
@@ -92,7 +93,7 @@ public class BackendServer {
                             }
                             DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, 8345);
                             checkSock.send(responsePacket);
-                            checkSock.close();
+
                             //System.out.println("Sent response packet!");
                             if (receiveAck(host, 8345)) {
                                 i += maxSize-20;
@@ -101,6 +102,7 @@ public class BackendServer {
                             System.out.println(e);
                         }
                     }
+                    checkSock.close();
                 }
                 System.out.println( new Date( ) + "  " + dpack.getAddress( ) + " : " + dpack.getPort( ) + " "+ request);
             }
@@ -191,15 +193,16 @@ public class BackendServer {
 
             byte[] result = new byte[length];
             int i = 0;
+            dsock2 = new DatagramSocket(8345);
             while (i < length-1020) {
                 System.out.println("Outer loop, i=" + i);
                 arr = new byte[1020];
                 dpack = new DatagramPacket(arr, arr.length);
                 sendAck(host, 8345);
                 //System.out.println("Ack was sent");
-                dsock2 = new DatagramSocket(8345);
+
                 dsock2.receive(dpack);
-                dsock2.close();
+
                 //System.out.println("Packet received");
                 s2 = new String(dpack.getData(), 0, dpack.getLength());
                 i = parseInt(s2.split("startindex")[0]);
@@ -214,6 +217,7 @@ public class BackendServer {
                 //System.out.println("After copy loop");
 
             }
+            dsock2.close();
             sendAck(host, 8345);
             System.out.println("returning");
             return result;
