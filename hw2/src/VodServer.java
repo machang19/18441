@@ -119,7 +119,7 @@ public class VodServer {
              if (peerInfo[2].substring(0,3).equals("add")) {
                  System.out.println("we are adding");
                  bServer.addPeer(filepath, uri_params.get("host"), parseInt(uri_params.get("port")) );
-                    return;
+                 return;
              }
              else if (peerInfo[2].equals("view")) {
                  filepath = peerInfo[3];
@@ -127,11 +127,12 @@ public class VodServer {
                  filearr = bServer.getContent(0,0, filepath);
                  try {
                      view(filepath, filearr, out, clientSocket);
+                     return;
                  }
                  catch (Exception e) {
                      System.out.println(e);
                  }
-                 System.out.println(filearr);// 0, 0 are dummy args dont do anything yet
+                 // 0, 0 are dummy args dont do anything yet
              }
              else if (peerInfo[2].substring(0,6).equals("config")) {
                  System.out.println("set bit rate");
@@ -221,6 +222,7 @@ public class VodServer {
      }
 
     private static void view(String filepath, byte[] filearr, DataOutputStream out, Socket clientSocket) throws Exception {
+        System.out.println("filearr length: " + filearr.length);
         OutputStream os = null;
         SimpleDateFormat dateFormat = new SimpleDateFormat(
                 "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
