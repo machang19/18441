@@ -2,15 +2,14 @@ import java.util.Date;
 import java.net.*;
 import java.io.*;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
 
 import static java.lang.Integer.parseInt;
 
 public class BackendServer {
 
     private static String filename;
+    static ExecutorService threadPool = Executors.newFixedThreadPool(12);
     private static DatagramSocket dsock;
     private Socket sock;
     private  ConcurrentMap<String, CopyOnWriteArrayList<InetAddress>> fileLookup = new ConcurrentHashMap<>();
@@ -39,10 +38,7 @@ public class BackendServer {
         }
     }
     public static void main( String args[]) throws Exception {
-        int filesize = 0;
-        int maxSize = 1020; // maximum packet size is 40 Bytes (for now)
-        byte sendarr[] = new byte[maxSize];
-        File file = new File("");
+
 
         while(true) {
             DatagramSocket dsock4 = new DatagramSocket(parseInt(args[0]));
@@ -54,67 +50,84 @@ public class BackendServer {
             System.out.println("waiting");
             dsock4.receive(dpack);
             dsock4.close();
-            System.out.println("received dpack");
-            byte arr2[] = dpack.getData();
-            int packSize = dpack.getLength();
-            String request = new String(arr2, 0, packSize);
-            System.out.println(request);
-
-            if (request.startsWith("Send this file:")) {
-                DatagramSocket checkSock = new DatagramSocket(port);
-                String filepath = request.substring(15, request.length());
-                file = new File(filepath);
-                filesize = (int)file.length();
-                initialConnectionSetup(dpack, file, port);
-                System.out.println("Address: " + dpack.getAddress());
-                System.out.println("Port: " + dpack.getPort());
-                boolean ack = receiveAck(dpack.getAddress(), port, checkSock);
-                if (ack) {
-                    int i = 0;
-                    byte[] filearray = new byte[(int) file.length()];
-                    FileInputStream fis = new FileInputStream(file);
-                    BufferedInputStream bis = new BufferedInputStream(fis);
-                    bis.read(filearray, 0, filearray.length);
-
-                    while (i < filesize) {
-                        System.out.println("in main function, i=" + i);
-                        try {
-                            //System.out.println("received packet and sending response");
-
-                            InetAddress host = dpack.getAddress();
-                            //strAddr = strAddr.substring(1); // strip leading slash from address
-                            //InetAddress host = InetAddress.getByName(strAddr);
-                            //InetAddress host = dpack.getAddress();
-                            //InetAddress host = InetAddress.getByName("128.237.205.32");
-                            String index = i + "startindex";
-                            byte iarr[] = index.getBytes();
-                            //System.out.println("Host: " + strAddr);
-                            //System.out.println("before k loop");
-                            for (int k = 0; k < iarr.length; k++)
-                            {
-                                sendarr[k] = iarr[k];
-                            }
-                            //System.out.println("before j loop");
-                            for (int j = i; j < Integer.min(i+maxSize-20, filesize); j++) {
-                                sendarr[j-i+iarr.length] = filearray[j];
-                            }
-                            DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, port);
-                            checkSock.send(responsePacket);
-
-                            //System.out.println("Sent response packet!");
-                            if (receiveAck(host, port, checkSock)) {
-                                i += maxSize-20;
-                            }
-                        } catch (Exception e) {
-                            System.out.println(e);
-                        }
-                    }
+            threadPool.submit(() -> {
+                try {
+                    serve(dpack,port);
                 }
-                checkSock.close();
-                System.out.println( new Date( ) + "  " + dpack.getAddress( ) + " : " + dpack.getPort( ) + " "+ request);
-            }
+                catch (Exception e) {
+                    System.out.println(e);
+                }
+            });
+
         }
     }
+
+    private static void serve(DatagramPacket dpack,int port) throws Exception{
+        int filesize = 0;
+        int maxSize = 1020; // maximum packet size is 40 Bytes (for now)
+        byte sendarr[] = new byte[maxSize];
+        File file = new File("");
+        System.out.println("received dpack");
+        byte arr2[] = dpack.getData();
+        int packSize = dpack.getLength();
+        String request = new String(arr2, 0, packSize);
+        System.out.println(request);
+
+        if (request.startsWith("Send this file:")) {
+            DatagramSocket checkSock = new DatagramSocket(port);
+            String filepath = request.substring(15, request.length());
+            file = new File(filepath);
+            filesize = (int)file.length();
+            initialConnectionSetup(dpack, file, port);
+            System.out.println("Address: " + dpack.getAddress());
+            System.out.println("Port: " + dpack.getPort());
+            boolean ack = receiveAck(dpack.getAddress(), port, checkSock);
+            if (ack) {
+                int i = 0;
+                byte[] filearray = new byte[(int) file.length()];
+                FileInputStream fis = new FileInputStream(file);
+                BufferedInputStream bis = new BufferedInputStream(fis);
+                bis.read(filearray, 0, filearray.length);
+
+                while (i < filesize) {
+                    System.out.println("in main function, i=" + i);
+                    try {
+                        //System.out.println("received packet and sending response");
+
+                        InetAddress host = dpack.getAddress();
+                        //strAddr = strAddr.substring(1); // strip leading slash from address
+                        //InetAddress host = InetAddress.getByName(strAddr);
+                        //InetAddress host = dpack.getAddress();
+                        //InetAddress host = InetAddress.getByName("128.237.205.32");
+                        String index = i + "startindex";
+                        byte iarr[] = index.getBytes();
+                        //System.out.println("Host: " + strAddr);
+                        //System.out.println("before k loop");
+                        for (int k = 0; k < iarr.length; k++)
+                        {
+                            sendarr[k] = iarr[k];
+                        }
+                        //System.out.println("before j loop");
+                        for (int j = i; j < Integer.min(i+maxSize-20, filesize); j++) {
+                            sendarr[j-i+iarr.length] = filearray[j];
+                        }
+                        DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, port);
+                        checkSock.send(responsePacket);
+
+                        //System.out.println("Sent response packet!");
+                        if (receiveAck(host, port, checkSock)) {
+                            i += maxSize-20;
+                        }
+                    } catch (Exception e) {
+                        System.out.println(e);
+                    }
+                }
+            }
+            checkSock.close();
+            System.out.println( new Date( ) + "  " + dpack.getAddress( ) + " : " + dpack.getPort( ) + " "+ request);
+        }
+    }
+
     public void addPeer(String filename, String host, int port) throws IOException {
         try {
             InetAddress hostAddress = InetAddress.getByName(host);
