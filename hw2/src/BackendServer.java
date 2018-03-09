@@ -13,6 +13,7 @@ public class BackendServer {
     private static String filename;
     private static DatagramSocket dsock;
     private Socket sock;
+    public static int bandwidth;
     private  ConcurrentMap<String, CopyOnWriteArrayList<InetAddress>> fileLookup = new ConcurrentHashMap<>();
     private ConcurrentMap<InetAddress, Integer> portLookup = new ConcurrentHashMap<>();
     public BackendServer() {
@@ -43,6 +44,8 @@ public class BackendServer {
         int maxSize = 1020; // maximum packet size is 40 Bytes (for now)
         byte sendarr[] = new byte[maxSize];
         File file = new File("");
+        long startTime;
+        int bytesSent;
 
         while(true) {
             DatagramSocket dsock4 = new DatagramSocket(parseInt(args[0]));
@@ -75,12 +78,30 @@ public class BackendServer {
                     FileInputStream fis = new FileInputStream(file);
                     BufferedInputStream bis = new BufferedInputStream(fis);
                     bis.read(filearray, 0, filearray.length);
-
+                    bytesSent = 0;
+                    startTime = 0;
+                    int delay = 0;
                     while (i < filesize) {
-                        System.out.println("in main function, i=" + i);
+                        if (i%100000 == 0)
+                            System.out.println("in main function, i=" + i);
                         try {
                             //System.out.println("received packet and sending response");
-
+                            long currTime = System.currentTimeMillis();
+                            long elapsed = currTime - startTime;
+                            float currRate = (float)bytesSent /(int)elapsed;
+                            if (elapsed >= 5000) {
+                                System.out.println("Inside bandwidth limiting");
+                                System.out.println("Current rate: " + currRate + " bandwidth: " + bandwidth);
+                                System.out.println(bandwidth != 0 && currRate > (float)bandwidth);
+                                if (bandwidth != 0 && currRate > (float)bandwidth) {
+                                    // wait
+                                    delay = (int)(bytesSent/bandwidth - elapsed);
+                                    System.out.println("Add delay of: " + delay);
+                                    Thread.sleep(delay);
+                                }
+                                startTime = currTime;
+                                bytesSent = 0;
+                            }
                             InetAddress host = dpack.getAddress();
                             //strAddr = strAddr.substring(1); // strip leading slash from address
                             //InetAddress host = InetAddress.getByName(strAddr);
@@ -100,6 +121,7 @@ public class BackendServer {
                             }
                             DatagramPacket responsePacket = new DatagramPacket(sendarr, sendarr.length, host, port);
                             checkSock.send(responsePacket);
+                            bytesSent += maxSize;
 
                             //System.out.println("Sent response packet!");
                             if (receiveAck(host, port, checkSock)) {
@@ -177,7 +199,9 @@ public class BackendServer {
     public byte[] getContent(int start, int end, String filename) {
         try {
             System.out.println("trying to send");
+            System.out.println(fileLookup.get(filename));
             InetAddress host = fileLookup.get(filename).get(0);
+            System.out.println("after filelookup");
             int port = portLookup.get(host);
             System.out.println("Host: " + host);
             System.out.println("Port: " + port);
@@ -188,9 +212,7 @@ public class BackendServer {
             //InetAddress host = InetAddress.getByName("128.2.13.137");
             DatagramPacket dpack = new DatagramPacket(arr, arr.length, host, port);
 
-            System.out.println("here2");
             dsock = new DatagramSocket();
-            System.out.println("here1");
             dsock.send(dpack);
             System.out.println("sent packet");
             arr = new byte[20];
@@ -210,7 +232,8 @@ public class BackendServer {
             int i = 0;
             dsock2 = new DatagramSocket(port);
             while (i < length-1020) {
-                System.out.println("Outer loop, i=" + i);
+                if (i%100000 == 0)
+                    System.out.println("Outer loop, i=" + i);
                 arr = new byte[1020];
                 dpack = new DatagramPacket(arr, arr.length);
                 sendAck(host, port, dsock2);
@@ -252,5 +275,11 @@ public class BackendServer {
     }
     public void send(int start, int end) {
 
+    }
+
+    public void setRate(int rate) {
+        this.bandwidth = rate;
+        System.out.println(this.bandwidth);
+        System.out.println(bandwidth);
     }
 }

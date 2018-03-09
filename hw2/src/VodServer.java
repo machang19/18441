@@ -13,7 +13,7 @@ public class VodServer {
     static ExecutorService threadPool = Executors.newFixedThreadPool(12);
     static BackendServer bServer = new BackendServer();
     public static void main(String[] args) throws IOException {
-         ServerSocket serverSocket = null;
+        ServerSocket serverSocket = null;
 
         if (args.length < 2) {
             System.err.println("please specify a port number");
@@ -22,15 +22,15 @@ public class VodServer {
         try {
             serverSocket = new ServerSocket(parseInt(args[0]));
             threadPool.submit(() -> {
-                try {
-                    String[] b_args = {args[1]};
-                    bServer.main(b_args);
-                }
-                catch (Exception e)
-                {
+                        try {
+                            String[] b_args = {args[1]};
+                            bServer.main(b_args);
+                        }
+                        catch (Exception e)
+                        {
 
-                }
-            }
+                        }
+                    }
 
             );
         }
@@ -41,6 +41,7 @@ public class VodServer {
         Socket clientSocket = null;
         System.out.println("Waiting for connection.....");
         while (true) {
+            System.out.println("BEGINNING OF VODSERVER LOOP");
             try {
                 clientSocket = serverSocket.accept();
 
@@ -53,6 +54,7 @@ public class VodServer {
                 Socket finalCS = clientSocket;
                 threadPool.submit(() -> {
                     try {
+                        System.out.println("CREATING NEW THREAD");
                         serve(finalCS);
                     }
                     catch (IOException e) {
@@ -63,166 +65,168 @@ public class VodServer {
             clientSocket = null;
         }
         serverSocket.close();
-     }
+    }
 
-     static String getContentType(String filename) {
-         System.out.println(filename);
-         int i = filename.indexOf('.');
-         String extension = filename.substring(i +1 );
-         System.out.println(i);
-         System.out.println(extension);
-         extension = extension.toLowerCase();
-         if (extension.equals("txt"))      { return "text/html"; }
-         else if (extension.equals("css")) { return "text/css"; }
-         else if (extension.equals("htm") || extension.equals("html")) { return "text/html"; }
-         else if (extension.equals("gif")) { return "image/gif"; }
-         else if (extension.equals("jpg") || extension.equals("jpeg")) { return "image/jpeg"; }
-         else if (extension.equals("png")) { return "image/png"; }
-         else if (extension.equals("js"))  { return "application/javascript"; }
-         else if (extension.equals("mp4") || extension.equals("webm") || extension.equals("ogg") || extension.equals("ogv"))
-         { return "video/webm";}
-         else { return "application/octet-stream"; }
-     }
+    static String getContentType(String filename) {
+        System.out.println(filename);
+        int i = filename.indexOf('.');
+        String extension = filename.substring(i +1 );
+        System.out.println(i);
+        System.out.println(extension);
+        extension = extension.toLowerCase();
+        if (extension.equals("txt"))      { return "text/html"; }
+        else if (extension.equals("css")) { return "text/css"; }
+        else if (extension.equals("htm") || extension.equals("html")) { return "text/html"; }
+        else if (extension.equals("gif")) { return "image/gif"; }
+        else if (extension.equals("jpg") || extension.equals("jpeg")) { return "image/jpeg"; }
+        else if (extension.equals("png")) { return "image/png"; }
+        else if (extension.equals("js"))  { return "application/javascript"; }
+        else if (extension.equals("mp4") || extension.equals("webm") || extension.equals("ogg") || extension.equals("ogv"))
+        { return "video/webm";}
+        else { return "application/octet-stream"; }
+    }
 
-     public static void serve(Socket clientSocket) throws IOException {
-         System.out.println("Connection successful");
-         System.out.println("Waiting for input.....");
-         DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
-         BufferedReader in = new BufferedReader(
-                 new InputStreamReader(clientSocket.getInputStream()));
+    public static void serve(Socket clientSocket) throws IOException {
+        System.out.println("Connection successful");
+        System.out.println("Waiting for input.....");
+        DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(clientSocket.getInputStream()));
 
-         String requestLine = in.readLine();
-         String param = in.readLine();
-         List<String> headerParams = new ArrayList<>();
-         String range = "";
-         while (param.length() > 0) {
-             String[] temp = param.split(":");
-             if (range.equals("") && param.split(":")[0].equals("Range")) {
-                 range = (param.split(":")[1]).trim();
-             }
-             headerParams.add(param);
-             param = in.readLine();
-         }
-         System.out.println(headerParams);
-         System.out.println(range);
-         String[] request = requestLine.split(" ");
-         System.out.println(requestLine);
-         String uri = request[1];
-         String[] peerInfo = uri.split("/");
-         String filepath;
-         System.out.println(Arrays.asList(peerInfo));
-         byte[] filearr = {};
-         if (peerInfo.length > 1 && peerInfo[1].equals("peer")) {
-             Map<String,String> uri_params = parse_uri(uri);
-             System.out.println(uri_params);
-             filepath = uri_params.get("path");
-             if (peerInfo[2].substring(0,3).equals("add")) {
-                 System.out.println("we are adding");
-                 bServer.addPeer(filepath, uri_params.get("host"), parseInt(uri_params.get("port")) );
-                 return;
-             }
-             else if (peerInfo[2].equals("view")) {
-                 filepath = peerInfo[3];
-                 System.out.println("viewing");
-                 filearr = bServer.getContent(0,0, filepath);
-                 try {
-                     view(filepath, filearr, out, clientSocket);
-                     return;
-                 }
-                 catch (Exception e) {
-                     System.out.println(e);
-                 }
-                 // 0, 0 are dummy args dont do anything yet
-             }
-             else if (peerInfo[2].substring(0,6).equals("config")) {
-                 System.out.println("set bit rate");
-                 // TODO: set bit rate
-             }
+        String requestLine = in.readLine();
+        String param = in.readLine();
+        List<String> headerParams = new ArrayList<>();
+        String range = "";
+        while (param.length() > 0) {
+            String[] temp = param.split(":");
+            if (range.equals("") && param.split(":")[0].equals("Range")) {
+                range = (param.split(":")[1]).trim();
+            }
+            headerParams.add(param);
+            param = in.readLine();
+        }
+        System.out.println(headerParams);
+        System.out.println(range);
+        String[] request = requestLine.split(" ");
+        System.out.println(requestLine);
+        String uri = request[1];
+        String[] peerInfo = uri.split("/");
+        String filepath;
+        System.out.println(Arrays.asList(peerInfo));
+        byte[] filearr = {};
+        if (peerInfo.length > 1 && peerInfo[1].equals("peer")) {
+            Map<String,String> uri_params = parse_uri(uri);
+            System.out.println(uri_params);
+            filepath = uri_params.get("path");
+            if (peerInfo[2].substring(0,3).equals("add")) {
+                System.out.println("we are adding");
+                bServer.addPeer(filepath, uri_params.get("host"), parseInt(uri_params.get("port")) );
+                return;
+            }
+            else if (peerInfo[2].equals("view")) {
+                filepath = peerInfo[3];
+                System.out.println("viewing");
+                filearr = bServer.getContent(0,0, filepath);
+                try {
+                    view(filepath, filearr, out, clientSocket);
+                }
+                catch (Exception e) {
+                    System.out.println(e);
+                }
+                System.out.println(filearr);// 0, 0 are dummy args dont do anything yet
+            }
+            else if (peerInfo[2].substring(0,6).equals("config")) {
+                int rateInd = peerInfo[2].indexOf("=");
+                String rateStr = peerInfo[2].substring(rateInd+1);
+                int rate = parseInt(rateStr);
+                System.out.println("set bit rate to " + rate);
+                bServer.setRate(rate);
+                return;
+            }
 
-         }
-         else {
-             filepath = uri;
-         }
-         filepath = filepath.replaceAll("/", "");
-         SimpleDateFormat dateFormat = new SimpleDateFormat(
-                 "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-         String time = dateFormat.format(Calendar.getInstance().getTime());
-         try {
-             File testFile = new File(filepath);
-             BufferedInputStream bis = null;
-             OutputStream os = null;
-             byte[] mybytearray = new byte[(int) testFile.length()];
-             if (filearr.length != 0)
-             {
-                 mybytearray = filearr;
-             }
-             FileInputStream fis = new FileInputStream(testFile);
-             bis = new BufferedInputStream(fis);
-             if (range.equals("")) {
-                 bis.read(mybytearray, 0, mybytearray.length);
-                 os = clientSocket.getOutputStream();
-                 System.out.println("Sending " + testFile + "(" + mybytearray.length + " bytes)");
-                 out.writeBytes("HTTP/1.1 200 OK\r\n");
-                 out.writeBytes("Date: " + time + "\r\n");
-                 out.writeBytes("Connection: Keep-Alive\r\n");
-                 out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
-                 System.out.println(getContentType(filepath));
-                 os.write(mybytearray, 0, mybytearray.length);
-                 System.out.println("Done.");
-             }
-             else {
-                 String[] temp = range.split("=");
-                 String[] temp2 = temp[1].split("-");
-                 int start;
-                 int length;
-                 if (temp2.length == 1) {
-                     if (temp[1].indexOf("-") == 0) {
-                         length = parseInt(temp2[0]);
-                         start = Integer.max(0, mybytearray.length - length);
-                     }
-                     else {
-                         start = parseInt(temp2[0]);
-                         length = mybytearray.length - start;
-                     }
-                 }
-                 else {
-                     start = parseInt(temp2[0]);
-                     int end = parseInt(temp2[1]);
-                     length = Integer.min(end - start + 1, mybytearray.length - start + 1);
-                 }
-                 System.out.println(start);
-                 System.out.println(length);
-                 bis.read(mybytearray, start, length);
-                 os = clientSocket.getOutputStream();
-                 System.out.println("Sending " + testFile + "(" + length + " bytes)");
-                 if (start == 0 && length == mybytearray.length) {
-                     out.writeBytes("HTTP/1.1 200 OK\r\n");
-                 }
-                 else {
-                     out.writeBytes("HTTP/1.1 206 Partial Content\r\n");
-                 }
-                 out.writeBytes("Date: " + time + "\r\n");
-                 out.writeBytes("Connection: Keep-Alive\r\n");
-                 out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
-                 System.out.println(getContentType(filepath));
-                 os.write(mybytearray, start, length);
-                 System.out.println("Done.");
-             }
-         }
-         catch (FileNotFoundException e) {
-             out.writeBytes("HTTP/1.1 404 Not Found\r\n");
-             out.writeBytes("Date: " + time + "\r\n");
-             out.writeBytes("Connection: Keep-Alive\r\n");
-         }
+        }
+        else {
+            filepath = uri;
+        }
+        filepath = filepath.replaceAll("/", "");
+        SimpleDateFormat dateFormat = new SimpleDateFormat(
+                "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+        String time = dateFormat.format(Calendar.getInstance().getTime());
+        try {
+            File testFile = new File(filepath);
+            BufferedInputStream bis = null;
+            OutputStream os = null;
+            byte[] mybytearray = new byte[(int) testFile.length()];
+            if (filearr.length != 0)
+            {
+                mybytearray = filearr;
+            }
+            FileInputStream fis = new FileInputStream(testFile);
+            bis = new BufferedInputStream(fis);
+            if (range.equals("")) {
+                bis.read(mybytearray, 0, mybytearray.length);
+                os = clientSocket.getOutputStream();
+                System.out.println("Sending " + testFile + "(" + mybytearray.length + " bytes)");
+                out.writeBytes("HTTP/1.1 200 OK\r\n");
+                out.writeBytes("Date: " + time + "\r\n");
+                out.writeBytes("Connection: Keep-Alive\r\n");
+                out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
+                System.out.println(getContentType(filepath));
+                os.write(mybytearray, 0, mybytearray.length);
+                System.out.println("Done.");
+            }
+            else {
+                String[] temp = range.split("=");
+                String[] temp2 = temp[1].split("-");
+                int start;
+                int length;
+                if (temp2.length == 1) {
+                    if (temp[1].indexOf("-") == 0) {
+                        length = parseInt(temp2[0]);
+                        start = Integer.max(0, mybytearray.length - length);
+                    }
+                    else {
+                        start = parseInt(temp2[0]);
+                        length = mybytearray.length - start;
+                    }
+                }
+                else {
+                    start = parseInt(temp2[0]);
+                    int end = parseInt(temp2[1]);
+                    length = Integer.min(end - start + 1, mybytearray.length - start + 1);
+                }
+                System.out.println(start);
+                System.out.println(length);
+                bis.read(mybytearray, start, length);
+                os = clientSocket.getOutputStream();
+                System.out.println("Sending " + testFile + "(" + length + " bytes)");
+                if (start == 0 && length == mybytearray.length) {
+                    out.writeBytes("HTTP/1.1 200 OK\r\n");
+                }
+                else {
+                    out.writeBytes("HTTP/1.1 206 Partial Content\r\n");
+                }
+                out.writeBytes("Date: " + time + "\r\n");
+                out.writeBytes("Connection: Keep-Alive\r\n");
+                out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
+                System.out.println(getContentType(filepath));
+                os.write(mybytearray, start, length);
+                System.out.println("Done.");
+            }
+        }
+        catch (FileNotFoundException e) {
+            out.writeBytes("HTTP/1.1 404 Not Found\r\n");
+            out.writeBytes("Date: " + time + "\r\n");
+            out.writeBytes("Connection: Keep-Alive\r\n");
+        }
 
-         out.close();
-         in.close();
-         clientSocket.close();
-     }
+        out.close();
+        in.close();
+        clientSocket.close();
+    }
 
     private static void view(String filepath, byte[] filearr, DataOutputStream out, Socket clientSocket) throws Exception {
-        System.out.println("filearr length: " + filearr.length);
         OutputStream os = null;
         SimpleDateFormat dateFormat = new SimpleDateFormat(
                 "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
@@ -272,4 +276,4 @@ public class VodServer {
         return result;
     }
 
-} 
+}
