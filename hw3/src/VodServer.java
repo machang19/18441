@@ -272,5 +272,47 @@ public class VodServer {
 
         return result;
     }
+    private static Map<String,String> parse_conf(String filename) throws Exception {
+        Map<String,String> result = new HashMap<>();
+        FileReader fr = new FileReader(filename);
+        BufferedReader br = new BufferedReader(fr);
+        String line = null;
 
+        while ( (line = br.readLine()) != null) {
+            int equalsInd = line.indexOf("=");
+            if (line.startsWith("uuid")) {
+                String uuid = line.substring(equalsInd+1, line.length());
+                result.put("uuid", uuid);
+            }
+            else if(line.startsWith("name")) {
+                String name = line.substring(equalsInd+1, line.length());
+                result.put("name", name);
+            }
+            else if(line.startsWith("frontend_port")) {
+                String frontend_port = line.substring(equalsInd+1, line.length());
+                result.put("frontend_port", frontend_port);
+            }
+            else if(line.startsWith("backend_port")) {
+                String backend_port = line.substring(equalsInd+1, line.length());
+                result.put("backend_port", backend_port);
+            }
+            else if(line.startsWith("content_dir")) {
+                String content_dir = line.substring(equalsInd+1, line.length());
+                result.put("content_dir", content_dir);
+            }
+            else if(line.startsWith("peer_count")) {
+                String peer_count = line.substring(equalsInd+1,line.length());
+                result.put("peer_count", peer_count)
+            }
+            else if(line.startsWith("peer_")) {
+                String peer_name = line.substring(equalsInd-2);
+                String peer_info = line.substring(equalsInd+1, line.length());
+                result.put(peer_name, peer_info);
+            }
+            else {
+                System.out.println("Don't recognize line: " + nextLine);
+            }
+        }
+        return result;
+    }
 }
