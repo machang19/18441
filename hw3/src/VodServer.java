@@ -274,6 +274,7 @@ public class VodServer {
     }
     private static Map<String,String> parse_conf(String filename) throws Exception {
         Map<String,String> result = new HashMap<>();
+        Boolean uuidFound = false;
         FileReader fr = new FileReader(filename);
         BufferedReader br = new BufferedReader(fr);
         String line = null;
@@ -283,6 +284,7 @@ public class VodServer {
             if (line.startsWith("uuid")) {
                 String uuid = line.substring(equalsInd+1, line.length());
                 result.put("uuid", uuid);
+                uuidFound = true;
             }
             else if(line.startsWith("name")) {
                 String name = line.substring(equalsInd+1, line.length());
@@ -302,7 +304,7 @@ public class VodServer {
             }
             else if(line.startsWith("peer_count")) {
                 String peer_count = line.substring(equalsInd+1,line.length());
-                result.put("peer_count", peer_count)
+                result.put("peer_count", peer_count);
             }
             else if(line.startsWith("peer_")) {
                 String peer_name = line.substring(equalsInd-2);
@@ -310,8 +312,11 @@ public class VodServer {
                 result.put(peer_name, peer_info);
             }
             else {
-                System.out.println("Don't recognize line: " + nextLine);
+                System.out.println("Don't recognize line: " + line);
             }
+        }
+        if (uuidFound == false) {
+            // TODO: generate uuid
         }
         return result;
     }
