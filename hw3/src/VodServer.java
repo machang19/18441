@@ -279,6 +279,12 @@ public class VodServer {
         BufferedReader br = new BufferedReader(fr);
         String line = null;
 
+        // Populate with default values
+        result.put("frontend_port", "18345");
+        result.put("backend_port", "18346");
+        result.put("content_dir", "content/");
+        result.put("peer_count", "0");
+
         while ( (line = br.readLine()) != null) {
             int equalsInd = line.indexOf("=");
             if (line.startsWith("uuid")) {
@@ -316,7 +322,7 @@ public class VodServer {
             }
         }
         if (uuidFound == false) {
-            // TODO: generate uuid
+            result.put("uuid", java.util.UUID.randomUUID().toString());
         }
         return result;
     }
