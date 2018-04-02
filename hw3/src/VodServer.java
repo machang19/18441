@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -12,11 +14,26 @@ import static java.lang.Integer.parseInt;
 public class VodServer {
     static ExecutorService threadPool = Executors.newFixedThreadPool(12);
     static BackendServer bServer = new BackendServer();
+    private String uuid;
+    private String name;
+    private int frontend_port;
+    private int backend_port;
+    private String content_dir;
+    private int peer_count;
+    private ConcurrentMap<String, Peer> peers = new ConcurrentHashMap<>();
+
     public static void main(String[] args) throws IOException {
         ServerSocket serverSocket = null;
-
-        if (args.length < 2) {
-            System.err.println("please specify a port number");
+        if (args.length == 0) {
+            try {
+                Map<String, String> node_args = parse_conf("node.conf");
+            }
+            catch (Exception e){
+                System.out.println("Cannot find default file: node.conf");
+            }
+        }
+        else if (args.length == 1) {
+            System.err.println("Trying to read in conf file: " + args[0]);
             System.exit(1);
         }
         try {
@@ -140,7 +157,6 @@ public class VodServer {
                 bServer.setRate(rate);
                 return;
             }
-
         }
         else {
             filepath = uri;
