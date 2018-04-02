@@ -4,17 +4,21 @@ import static jdk.nashorn.internal.objects.ArrayBufferView.length;
 public class Peer {
     private String uuid;
     private String hostname;
+    private String name;
     private int fport;
     private int bport;
     private int distance;
 
     public String getUuid() { return uuid; }
-    public String getName() { return hostname; }
+    public String getName() {return name; }
+    public String getHostname() { return hostname; }
     public int getFport() { return fport; }
     public int getBport() { return bport; }
     public int getDistance() { return distance; }
 
-    public void update_params(String peer_info) {
+    public void update_params(String peer_name, String peer_info) {
+        name = peer_name;
+
         int start = 0;
         int end = peer_info.indexOf(",", start);
         System.out.print(peer_info.substring(start,end) + " | ");
