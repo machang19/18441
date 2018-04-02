@@ -1,3 +1,6 @@
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 import java.net.*;
 import java.io.*;
 import java.io.IOException;
@@ -127,7 +130,8 @@ public class VodServer {
         String uri = request[1];
         String[] peerInfo = uri.split("/");
         String filepath;
-        System.out.println(Arrays.asList(peerInfo));
+        System.out.println("yo yo " + Arrays.asList(peerInfo));
+        System.out.println("hi" + peerInfo[2]);
         byte[] filearr = {};
         if (peerInfo.length > 1 && peerInfo[1].equals("peer")) {
             Map<String,String> uri_params = parse_uri(uri);
@@ -149,6 +153,59 @@ public class VodServer {
                     System.out.println(e);
                 }
                 System.out.println(filearr);// 0, 0 are dummy args dont do anything yet
+            }
+            else if (peerInfo[2].equals("uuid")) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat(
+                        "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+                dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                String time = dateFormat.format(Calendar.getInstance().getTime());
+                System.out.println("returning uuid");
+                OutputStream os = clientSocket.getOutputStream();
+                out.writeBytes("HTTP/1.1 200 OK\r\n");
+                out.writeBytes("Date: " + time + "\r\n");
+                out.writeBytes("Connection: Keep-Alive\r\n");
+                out.writeBytes("Content-Type: application/json\r\n\r\n");
+                JSONObject uuidJSON = new JSONObject();
+
+                uuidJSON.put("uuid",uuid);
+                byte [] mybytearray = uuidJSON.toJSONString().getBytes();
+                os.write(mybytearray, 0, mybytearray.length);
+                System.out.println("Done.");
+                out.close();
+                in.close();
+                clientSocket.close();
+                return;
+            }
+            else if (peerInfo[2].equals("neighbors")) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat(
+                        "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+                dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                String time = dateFormat.format(Calendar.getInstance().getTime());
+                System.out.println("returning uuid");
+                OutputStream os = clientSocket.getOutputStream();
+                out.writeBytes("HTTP/1.1 200 OK\r\n");
+                out.writeBytes("Date: " + time + "\r\n");
+                out.writeBytes("Connection: Keep-Alive\r\n");
+                out.writeBytes("Content-Type: application/json\r\n\r\n");
+                JSONArray arr = new JSONArray();
+                for (Peer p : peers.values())
+                {
+                    JSONObject peer = new JSONObject();
+                    peer.put("uuid",p.getUuid());
+                    peer.put("host", p.getHostname());
+                    peer.put("name", p.getName());
+                    peer.put("frontend", p.getFport());
+                    peer.put("backend", p.getBport());
+                    peer.put("metric", p.getDistance());
+                    arr.add(peer);
+                }
+                byte [] mybytearray = arr.toJSONString().getBytes();
+                os.write(mybytearray, 0, mybytearray.length);
+                System.out.println("Done.");
+                out.close();
+                in.close();
+                clientSocket.close();
+                return;
             }
             else if (peerInfo[2].substring(0,6).equals("config")) {
                 int rateInd = peerInfo[2].indexOf("=");
@@ -337,7 +394,7 @@ public class VodServer {
                 String peer_name = line.substring(0, equalsInd-1).trim();
                 String peer_info = line.substring(equalsInd+1, line.length()).trim();
                 Peer peer = new Peer();
-                peer.update_params(peer_info);
+                peer.update_params(peer_name,peer_info);
                 peers.put(peer.getUuid(), peer);
             }
             else {
