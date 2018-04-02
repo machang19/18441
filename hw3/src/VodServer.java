@@ -403,6 +403,15 @@ public class VodServer {
         }
         if (uuid == null) {
             uuid = java.util.UUID.randomUUID().toString();
+            String newline = "uuid = " + uuid;
+            try {
+                FileWriter fw = new FileWriter(filename);
+                BufferedWriter bw = new BufferedWriter(fw);
+                bw.write(newline + "\n");
+                bw.close();
+            } catch (IOException e) {
+                System.out.println("Could not write new uuid to file " + filename);
+            }
         }
         System.out.println("returning from parse_conf");
         return 0;
