@@ -14,33 +14,34 @@ import static java.lang.Integer.parseInt;
 public class VodServer {
     static ExecutorService threadPool = Executors.newFixedThreadPool(12);
     static BackendServer bServer = new BackendServer();
-    private String uuid;
-    private String name;
-    private int frontend_port;
-    private int backend_port;
-    private String content_dir;
-    private int peer_count;
-    private ConcurrentMap<String, Peer> peers = new ConcurrentHashMap<>();
+    static String uuid;
+    static String name;
+    static int frontend_port;
+    static int backend_port;
+    static String content_dir;
+    static int peer_count;
+    static ConcurrentMap<String, Peer> peers = new ConcurrentHashMap<>();
 
     public static void main(String[] args) throws IOException {
         ServerSocket serverSocket = null;
-        if (args.length == 0) {
-            try {
-                Map<String, String> node_args = parse_conf("node.conf");
-            }
-            catch (Exception e){
-                System.out.println("Cannot find default file: node.conf");
-            }
-        }
-        else if (args.length == 1) {
-            System.err.println("Trying to read in conf file: " + args[0]);
-            System.exit(1);
+        String filename = "node.conf";
+        if (args.length == 1) {
+            System.out.println("Config file provided");
+            filename = args[0];
         }
         try {
-            serverSocket = new ServerSocket(parseInt(args[0]));
+            System.out.println("Trying to parse conf file");
+            int i = parse_conf(filename);
+        }
+        catch (Exception e) {
+            System.out.println("Cannot read file: " + filename);
+        }
+        try {
+            serverSocket = new ServerSocket(frontend_port);
+            System.out.println("after frontend");
             threadPool.submit(() -> {
                         try {
-                            String[] b_args = {args[1]};
+                            String[] b_args = {Integer.toString(backend_port)};
                             bServer.main(b_args);
                         }
                         catch (Exception e)
@@ -52,7 +53,7 @@ public class VodServer {
             );
         }
         catch (IOException e) {
-            System.err.println("Could not listen on port: " + args[0]);
+            System.err.println("Could not listen on port: " + frontend_port);
             System.exit(1);
         }
         Socket clientSocket = null;
@@ -288,58 +289,65 @@ public class VodServer {
 
         return result;
     }
-    private static Map<String,String> parse_conf(String filename) throws Exception {
-        Map<String,String> result = new HashMap<>();
-        Boolean uuidFound = false;
+    private static int parse_conf(String filename) throws Exception {
         FileReader fr = new FileReader(filename);
         BufferedReader br = new BufferedReader(fr);
         String line = null;
 
         // Populate with default values
-        result.put("frontend_port", "18345");
-        result.put("backend_port", "18346");
-        result.put("content_dir", "content/");
-        result.put("peer_count", "0");
+        frontend_port = 18345;
+        backend_port = 18346;
+        content_dir = "content/";
+        peer_count = 0;
 
         while ( (line = br.readLine()) != null) {
+            // System.out.print("Line: " + line + ".....");
             int equalsInd = line.indexOf("=");
             if (line.startsWith("uuid")) {
-                String uuid = line.substring(equalsInd+1, line.length());
-                result.put("uuid", uuid);
-                uuidFound = true;
+                String c_uuid = line.substring(equalsInd+1, line.length()).trim();
+                System.out.println("uuid is: " + c_uuid);
+                uuid = c_uuid;
             }
             else if(line.startsWith("name")) {
-                String name = line.substring(equalsInd+1, line.length());
-                result.put("name", name);
+                String hostname = line.substring(equalsInd+1, line.length()).trim();
+                System.out.println("name is " + hostname);
+                name = hostname;
             }
             else if(line.startsWith("frontend_port")) {
-                String frontend_port = line.substring(equalsInd+1, line.length());
-                result.put("frontend_port", frontend_port);
+                String fport = line.substring(equalsInd+1, line.length()).trim();
+                System.out.println("frontend port is " + fport);
+                frontend_port = Integer.parseInt(fport);
             }
             else if(line.startsWith("backend_port")) {
-                String backend_port = line.substring(equalsInd+1, line.length());
-                result.put("backend_port", backend_port);
+                String bport = line.substring(equalsInd+1, line.length()).trim();
+                System.out.println("backend port is " + bport);
+                backend_port = parseInt(bport);
             }
             else if(line.startsWith("content_dir")) {
-                String content_dir = line.substring(equalsInd+1, line.length());
-                result.put("content_dir", content_dir);
+                String dir = line.substring(equalsInd+1, line.length()).trim();
+                System.out.println("content directory is " + dir);
+                content_dir = dir;
             }
             else if(line.startsWith("peer_count")) {
-                String peer_count = line.substring(equalsInd+1,line.length());
-                result.put("peer_count", peer_count);
+                String numPeers = line.substring(equalsInd+1,line.length()).trim();
+                System.out.println("peer count is " + numPeers);
+                peer_count  = parseInt(numPeers);
             }
             else if(line.startsWith("peer_")) {
-                String peer_name = line.substring(equalsInd-2);
-                String peer_info = line.substring(equalsInd+1, line.length());
-                result.put(peer_name, peer_info);
+                String peer_name = line.substring(0, equalsInd-1).trim();
+                String peer_info = line.substring(equalsInd+1, line.length()).trim();
+                Peer peer = new Peer();
+                peer.update_params(peer_info);
+                peers.put(peer.getUuid(), peer);
             }
             else {
                 System.out.println("Don't recognize line: " + line);
             }
         }
-        if (uuidFound == false) {
-            result.put("uuid", java.util.UUID.randomUUID().toString());
+        if (uuid == null) {
+            uuid = java.util.UUID.randomUUID().toString();
         }
-        return result;
+        System.out.println("returning from parse_conf");
+        return 0;
     }
 }
