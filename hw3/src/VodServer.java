@@ -21,10 +21,11 @@ public class VodServer {
     static String name;
     static int frontend_port;
     static int backend_port;
+    static long time = System.nanoTime();
     static String content_dir;
     static int peer_count;
     static ConcurrentMap<String, Peer> peers = new ConcurrentHashMap<>();
-
+    static ConcurrentMap<String,List<String>> networkMap = new ConcurrentHashMap<>();
     public static void main(String[] args) throws IOException {
         ServerSocket serverSocket = null;
         String filename = "node.conf";
@@ -63,6 +64,19 @@ public class VodServer {
         System.out.println("Waiting for connection.....");
         while (true) {
             try {
+                if (((System.nanoTime() - time) / 1_000_000_000.0) > 10);
+                {
+                    threadPool.submit(() -> {
+                        try {
+                            updateNetworkMap();
+                        }
+                        catch (Exception E){
+                            System.out.println(E);
+                        }
+
+                    });
+                }
+                time = System.nanoTime();
                 clientSocket = serverSocket.accept();
 
             } catch (IOException e) {
@@ -84,6 +98,39 @@ public class VodServer {
             clientSocket = null;
         }
         serverSocket.close();
+    }
+
+    private static void updateNetworkMap() throws Exception{
+        for (Peer p : peers.values()){
+
+            System.out.println("here");
+            Socket socket = new Socket(p.getHostname(), p.getFport());
+            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(socket.getInputStream()));
+
+            SimpleDateFormat dateFormat = new SimpleDateFormat(
+                    "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+            dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+            String time = dateFormat.format(Calendar.getInstance().getTime());
+            System.out.println("returning uuid");
+            OutputStream os = socket.getOutputStream();
+            out.writeBytes("GET /peer/neighbors HTTP/1.1\r\n");
+            out.writeBytes("Date: " + time + "\r\n");
+            out.writeBytes("Connection: Keep-Alive\r\n");
+            out.writeBytes("Content-Type: application/json\r\n\r\n");
+            System.out.println("Done.");
+            String temp = in.readLine();
+            while (temp.length() > 0)
+            {
+                System.out.println(temp);
+                temp = in.readLine();
+            }
+            out.close();
+            in.close();
+            socket.close();
+
+        }
     }
 
     static String getContentType(String filename) {
