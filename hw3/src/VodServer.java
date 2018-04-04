@@ -137,7 +137,41 @@ public class VodServer {
             Map<String,String> uri_params = parse_uri(uri);
             System.out.println(uri_params);
             filepath = uri_params.get("path");
-            if (peerInfo[2].substring(0,3).equals("add")) {
+            if (peerInfo[2].length() >= 11 && peerInfo[2].substring(0,11).equals("addneighbor")) {
+                System.out.println("here");
+                parse_addneighbor_uri(uri);
+                System.out.println("here2");
+                SimpleDateFormat dateFormat = new SimpleDateFormat(
+                        "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+                dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                String time = dateFormat.format(Calendar.getInstance().getTime());
+                System.out.println("returning uuid");
+                OutputStream os = clientSocket.getOutputStream();
+                out.writeBytes("HTTP/1.1 200 OK\r\n");
+                out.writeBytes("Date: " + time + "\r\n");
+                out.writeBytes("Connection: Keep-Alive\r\n");
+                out.writeBytes("Content-Type: application/json\r\n\r\n");
+                JSONArray arr = new JSONArray();
+                for (Peer p : peers.values())
+                {
+                    JSONObject peer = new JSONObject();
+                    peer.put("uuid",p.getUuid());
+                    peer.put("host", p.getHostname());
+                    peer.put("name", "node" + p.getNode());
+                    peer.put("frontend", p.getFport());
+                    peer.put("backend", p.getBport());
+                    peer.put("metric", p.getDistance());
+                    arr.add(peer);
+                }
+                byte [] mybytearray = arr.toJSONString().getBytes();
+                os.write(mybytearray, 0, mybytearray.length);
+                System.out.println("Done.");
+                out.close();
+                in.close();
+                clientSocket.close();
+                return;
+            }
+            else if (peerInfo[2].substring(0,3).equals("add")) {
                 System.out.println("we are adding");
                 bServer.addPeer(filepath, uri_params.get("host"), parseInt(uri_params.get("port")) );
                 return;
@@ -193,7 +227,7 @@ public class VodServer {
                     JSONObject peer = new JSONObject();
                     peer.put("uuid",p.getUuid());
                     peer.put("host", p.getHostname());
-                    peer.put("name", p.getName());
+                    peer.put("name", "node" + p.getNode());
                     peer.put("frontend", p.getFport());
                     peer.put("backend", p.getBport());
                     peer.put("metric", p.getDistance());
@@ -207,6 +241,7 @@ public class VodServer {
                 clientSocket.close();
                 return;
             }
+
             else if (peerInfo[2].substring(0,6).equals("config")) {
                 int rateInd = peerInfo[2].indexOf("=");
                 String rateStr = peerInfo[2].substring(rateInd+1);
@@ -346,6 +381,56 @@ public class VodServer {
 
         return result;
     }
+
+
+    private static void parse_addneighbor_uri(String uri) {
+        Peer result = new Peer();
+        int starti = uri.indexOf("uuid=");
+        System.out.println(1);
+        if (starti != -1) {
+            int endi = uri.indexOf('&', starti);
+            if(endi == -1) endi = uri.length();
+            result.setUuid(uri.substring(starti + 5,endi));
+        }
+        System.out.println(2);
+        starti = uri.indexOf("host=");
+        if (starti != -1) {
+            int endi = uri.indexOf('&', starti);
+            if(endi == -1) endi = uri.length();
+            result.setHostname(uri.substring(starti + 5,endi));
+        }
+        System.out.println(3);
+        starti = uri.indexOf("frontend=");
+        if (starti != -1) {
+            int endi = uri.indexOf('&', starti);
+            if(endi == -1) endi = uri.length();
+            result.setFport(parseInt(uri.substring(starti + 9,endi)));
+        }
+        System.out.println(4);
+        starti = uri.indexOf("backend=");
+        if (starti != -1) {
+            int endi = uri.indexOf('&', starti);
+            if(endi == -1) endi = uri.length();
+            result.setBport(parseInt(uri.substring(starti + 8,endi)));
+        }
+        System.out.println(5);
+        starti = uri.indexOf("metric=");
+        if (starti != -1) {
+            int endi = uri.indexOf('&', starti);
+            if(endi == -1) endi = uri.length();
+            result.setDistance(parseInt(uri.substring(starti + 7,endi)));
+        }
+
+        System.out.println(6);
+        int max = -1;
+        for (Peer p : peers.values())
+        {
+            max = Integer.max(max, p.getNode());
+        }
+        result.setNode(max + 1);
+        peers.put(result.getUuid(), result);
+    }
+
     private static int parse_conf(String filename) throws Exception {
         FileReader fr = new FileReader(filename);
         BufferedReader br = new BufferedReader(fr);
