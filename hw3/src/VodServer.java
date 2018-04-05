@@ -21,7 +21,6 @@ public class VodServer {
     static String name;
     static int frontend_port;
     static int backend_port;
-    static long time = System.nanoTime();
     static String content_dir;
     static int peer_count;
     static ConcurrentMap<String, Peer> peers = new ConcurrentHashMap<>();
@@ -55,6 +54,23 @@ public class VodServer {
                     }
 
             );
+            threadPool.submit(() -> {
+                Long time = System.nanoTime();
+                while (true) {
+                    try {
+                        if (((System.nanoTime() - time) / 1_000_000_000.0) > 10.0)
+                        {
+                            updateNetworkMap();
+                            time = System.nanoTime();
+                        }
+
+
+                    }
+                    catch(Exception e){
+                        System.out.println(e);
+                    }
+                }
+            });
         }
         catch (IOException e) {
             System.err.println("Could not listen on port: " + frontend_port);
@@ -64,19 +80,7 @@ public class VodServer {
         System.out.println("Waiting for connection.....");
         while (true) {
             try {
-                if (((System.nanoTime() - time) / 1_000_000_000.0) > 10);
-                {
-                    threadPool.submit(() -> {
-                        try {
-                            updateNetworkMap();
-                        }
-                        catch (Exception E){
-                            System.out.println(E);
-                        }
 
-                    });
-                }
-                time = System.nanoTime();
                 clientSocket = serverSocket.accept();
 
             } catch (IOException e) {
@@ -113,7 +117,7 @@ public class VodServer {
                     "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
             dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
             String time = dateFormat.format(Calendar.getInstance().getTime());
-            System.out.println("returning uuid");
+            System.out.println("updating network map");
             OutputStream os = socket.getOutputStream();
             out.writeBytes("GET /peer/neighbors HTTP/1.1\r\n");
             out.writeBytes("Date: " + time + "\r\n");
