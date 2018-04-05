@@ -6,7 +6,11 @@
 
     <target name="compile">
         <mkdir dir="build/classes"/>
-        <javac srcdir="src" destdir="build/classes"/>
+        <javac srcdir="./src" destdir="./build/classes">
+            <classpath>
+                <pathelement path="json-simple-1.1.1.jar"/>
+            </classpath>
+        </javac>
     </target>
 
     <target name="jar">
