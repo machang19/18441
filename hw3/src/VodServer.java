@@ -1,5 +1,6 @@
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import java.net.*;
 import java.io.*;
@@ -68,6 +69,7 @@ public class VodServer {
                     }
                     catch(Exception e){
                         System.out.println(e);
+                        time = System.nanoTime();
                     }
                 }
             });
@@ -124,15 +126,26 @@ public class VodServer {
             out.writeBytes("Connection: Keep-Alive\r\n");
             out.writeBytes("Content-Type: application/json\r\n\r\n");
             System.out.println("Done.");
-            String temp = in.readLine();
-            while (temp.length() > 0)
-            {
+            String temp;
+            StringBuffer response = new StringBuffer();
+            while ((temp = in.readLine())!= null ) {
+                response.append(temp);
                 System.out.println(temp);
-                temp = in.readLine();
             }
+
+            //print in String
+            System.out.println("here");
+            System.out.println(response.toString());
+            System.out.println("here");
+            //Read JSON response and print
+            JSONParser parser = new JSONParser();
+            JSONObject json = (JSONObject) parser.parse(response.toString());
+            System.out.println("here");
+            System.out.println(json.toJSONString());
+            System.out.println("here");
             out.close();
-            in.close();
             socket.close();
+            in.close();
 
         }
     }
@@ -285,7 +298,8 @@ public class VodServer {
                     arr.add(peer);
                 }
                 byte [] mybytearray = arr.toJSONString().getBytes();
-                os.write(mybytearray, 0, mybytearray.length);
+                //os.write(mybytearray, 0, mybytearray.length);
+                out.write(mybytearray, 0, mybytearray.length);
                 System.out.println("Done.");
                 out.close();
                 in.close();
