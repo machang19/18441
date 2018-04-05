@@ -26,13 +26,31 @@ public class VodServer {
     static String content_dir;
     static int peer_count;
     static ConcurrentMap<String, Peer> peers = new ConcurrentHashMap<>();
+    static ConcurrentMap<Integer, Peer> nodeToPeer = new ConcurrentHashMap<>();
     static ConcurrentMap<Integer,List<Pair<Integer,Integer>>> networkMap = new ConcurrentHashMap<>();
     public static void main(String[] args) throws IOException {
         ServerSocket serverSocket = null;
         String filename = "node.conf";
+        ArrayList<Pair<Integer,Integer>> temp = new ArrayList<>();
+        temp.add(new Pair<>(2,10));
+        temp.add(new Pair<>(3,20));
+        networkMap.put(1,temp);
+        temp = new ArrayList<>();
+        temp.add(new Pair<>(1,10));
+        temp.add(new Pair<>(3,20));
+        networkMap.put(2,temp);
+        temp = new ArrayList<>();
+        temp.add(new Pair<>(1,20));
+        temp.add(new Pair<>(2,20));
+        temp.add(new Pair<>(4,30));
+        networkMap.put(3,temp);
+        temp = new ArrayList<>();
+        temp.add(new Pair<>(3,30));
+        networkMap.put(4,temp);
         if (args.length == 1) {
             System.out.println("Config file provided");
             filename = args[0];
+
         }
         try {
             System.out.println("Trying to parse conf file");
@@ -289,14 +307,14 @@ public class VodServer {
                 out.writeBytes("Connection: Keep-Alive\r\n");
                 out.writeBytes("Content-Type: application/json\r\n\r\n");
                 JSONObject mapJSON = new JSONObject();
-                for (Integer node: networkMap.keySet())
+                for (Integer n: networkMap.keySet())
                 {
                     JSONObject temp = new JSONObject();
-                    for (Pair<Integer,Integer> neighbor: networkMap.get(node))
+                    for (Pair<Integer,Integer> neighbor: networkMap.get(n))
                     {
                         temp.put("node" + neighbor.getKey(), neighbor.getValue());
                     }
-                    mapJSON.put("node" + node, temp);
+                    mapJSON.put("node" + n, temp);
                 }
 
                 byte [] mybytearray = mapJSON.toJSONString().getBytes();
@@ -318,15 +336,32 @@ public class VodServer {
                 out.writeBytes("Date: " + time + "\r\n");
                 out.writeBytes("Connection: Keep-Alive\r\n");
                 out.writeBytes("Content-Type: application/json\r\n\r\n");
-                JSONObject mapJSON = new JSONObject();
+                JSONArray arr = new JSONArray();
                 Map<Integer,Integer> sPaths = find_shortest_paths(node);
+                ArrayList<Pair<Integer,Integer>> unsortedPaths = new ArrayList<>();
                 for (Integer n: sPaths.keySet())
                 {
+                    if (n != node ) {
+                        int d = sPaths.get(n);
+
+                        int i = 0;
+                        for (Pair<Integer, Integer> j : unsortedPaths) {
+                            if (j.getValue() > d) {
+                                break;
+                            }
+                            i++;
+                        }
+                        unsortedPaths.add(i, new Pair<>(n, d));
+                    }
+                }
+                for (Pair<Integer,Integer> j : unsortedPaths)
+                {
                     JSONObject temp = new JSONObject();
-                    mapJSON.put("node" + n, sPaths.get(n));
+                    temp.put("node" + j.getKey(), j.getValue());
+                    arr.add(temp);
                 }
 
-                byte [] mybytearray = mapJSON.toJSONString().getBytes();
+                byte [] mybytearray = arr.toJSONString().getBytes();
                 os.write(mybytearray, 0, mybytearray.length);
                 System.out.println("Done.");
                 out.close();
