@@ -57,19 +57,23 @@ public class VodServer {
             );
             threadPool.submit(() -> {
                 Long time = System.nanoTime();
+                int numFails = 0;
                 while (true) {
-                    try {
-                        if (((System.nanoTime() - time) / 1_000_000_000.0) > 10.0)
-                        {
-                            updateNetworkMap();
-                            time = System.nanoTime();
+                    for (Peer p : peers.values()) {
+                        try {
+                            if (((System.nanoTime() - time) / 1_000_000_000.0) >= 10.0) {
+                                time = System.nanoTime();
+                                updateNetworkMap(p);
+                                numFails = 0;
+                            }
+                        } catch (Exception e) {
+                            System.out.println(e);
+                            numFails += 1;
+                            if (numFails >= 3) {
+                                System.out.println("3 Fails: neighbor " + p.getUuid() + " unreachable");
+                                peers.remove(p.getUuid());
+                            }
                         }
-
-
-                    }
-                    catch(Exception e){
-                        System.out.println(e);
-                        time = System.nanoTime();
                     }
                 }
             });
@@ -106,48 +110,44 @@ public class VodServer {
         serverSocket.close();
     }
 
-    private static void updateNetworkMap() throws Exception{
-        for (Peer p : peers.values()){
+    private static void updateNetworkMap(Peer p) throws Exception{
+        System.out.println("here");
+        Socket socket = new Socket(p.getHostname(), p.getFport());
+        DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(socket.getInputStream()));
 
-            System.out.println("here");
-            Socket socket = new Socket(p.getHostname(), p.getFport());
-            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(socket.getInputStream()));
-
-            SimpleDateFormat dateFormat = new SimpleDateFormat(
-                    "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-            dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-            String time = dateFormat.format(Calendar.getInstance().getTime());
-            System.out.println("updating network map");
-            OutputStream os = socket.getOutputStream();
-            out.writeBytes("GET /peer/neighbors HTTP/1.1\r\n");
-            out.writeBytes("Date: " + time + "\r\n");
-            out.writeBytes("Connection: Keep-Alive\r\n");
-            out.writeBytes("Content-Type: application/json\r\n\r\n");
-            System.out.println("Done.");
-            String temp;
-            StringBuffer response = new StringBuffer();
-            while ((temp = in.readLine())!= null ) {
-                response.append(temp);
-                System.out.println(temp);
-            }
-
-            //print in String
-            System.out.println("here");
-            System.out.println(response.toString());
-            System.out.println("here");
-            //Read JSON response and print
-            JSONParser parser = new JSONParser();
-            JSONObject json = (JSONObject) parser.parse(response.toString());
-            System.out.println("here");
-            System.out.println(json.toJSONString());
-            System.out.println("here");
-            out.close();
-            socket.close();
-            in.close();
-
+        SimpleDateFormat dateFormat = new SimpleDateFormat(
+                "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+        String time = dateFormat.format(Calendar.getInstance().getTime());
+        System.out.println("updating network map");
+        OutputStream os = socket.getOutputStream();
+        out.writeBytes("GET /peer/neighbors HTTP/1.1\r\n");
+        out.writeBytes("Date: " + time + "\r\n");
+        out.writeBytes("Connection: Keep-Alive\r\n");
+        out.writeBytes("Content-Type: application/json\r\n\r\n");
+        System.out.println("Done.");
+        String temp;
+        StringBuffer response = new StringBuffer();
+        while ((temp = in.readLine())!= null ) {
+            response.append(temp);
+            System.out.println(temp);
         }
+
+        //print in String
+        System.out.println("here");
+        System.out.println(response.toString());
+        System.out.println("here");
+        //Read JSON response and print
+        JSONParser parser = new JSONParser();
+        JSONObject json = (JSONObject) parser.parse(response.toString());
+        System.out.println("here");
+        System.out.println(json.toJSONString());
+        System.out.println("here");
+        out.close();
+        socket.close();
+        in.close();
     }
 
     static String getContentType(String filename) {
@@ -512,32 +512,26 @@ public class VodServer {
             int equalsInd = line.indexOf("=");
             if (line.startsWith("uuid")) {
                 String c_uuid = line.substring(equalsInd+1, line.length()).trim();
-                System.out.println("uuid is: " + c_uuid);
                 uuid = c_uuid;
             }
             else if(line.startsWith("name")) {
                 String hostname = line.substring(equalsInd+1, line.length()).trim();
-                System.out.println("name is " + hostname);
                 name = hostname;
             }
             else if(line.startsWith("frontend_port")) {
                 String fport = line.substring(equalsInd+1, line.length()).trim();
-                System.out.println("frontend port is " + fport);
                 frontend_port = Integer.parseInt(fport);
             }
             else if(line.startsWith("backend_port")) {
                 String bport = line.substring(equalsInd+1, line.length()).trim();
-                System.out.println("backend port is " + bport);
                 backend_port = parseInt(bport);
             }
             else if(line.startsWith("content_dir")) {
                 String dir = line.substring(equalsInd+1, line.length()).trim();
-                System.out.println("content directory is " + dir);
                 content_dir = dir;
             }
             else if(line.startsWith("peer_count")) {
                 String numPeers = line.substring(equalsInd+1,line.length()).trim();
-                System.out.println("peer count is " + numPeers);
                 peer_count  = parseInt(numPeers);
             }
             else if(line.startsWith("peer_")) {
