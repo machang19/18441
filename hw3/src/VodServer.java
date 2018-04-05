@@ -240,6 +240,8 @@ public class VodServer {
                 System.out.println("we are adding");
                 bServer.addPeer(filepath, uri_params.get("host"), parseInt(uri_params.get("port")) );
                 return;
+            }else if (peerInfo[2].equals("kill")) {
+                System.exit(0);// 0, 0 are dummy args dont do anything yet
             }
             else if (peerInfo[2].equals("view")) {
                 filepath = peerInfo[3];
