@@ -1,4 +1,3 @@
-import javafx.util.Pair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -27,30 +26,29 @@ public class VodServer {
     static int peer_count;
     static ConcurrentMap<String, Peer> peers = new ConcurrentHashMap<>();
     static ConcurrentMap<Integer, Peer> nodeToPeer = new ConcurrentHashMap<>();
-    static ConcurrentMap<Integer,List<Pair<Integer,Integer>>> networkMap = new ConcurrentHashMap<>();
+    static ConcurrentMap<Integer,Map<Integer,Integer>> networkMap = new ConcurrentHashMap<>();
     public static void main(String[] args) throws IOException {
         ServerSocket serverSocket = null;
         String filename = "node.conf";
-        ArrayList<Pair<Integer,Integer>> temp = new ArrayList<>();
-        temp.add(new Pair<>(2,10));
-        temp.add(new Pair<>(3,20));
+        HashMap<Integer,Integer> temp = new HashMap<>();
+        temp.put(2,10);
+        temp.put(3,20);
         networkMap.put(1,temp);
-        temp = new ArrayList<>();
-        temp.add(new Pair<>(1,10));
-        temp.add(new Pair<>(3,20));
+        temp = new HashMap<>();
+        temp.put(1,10);
+        temp.put(3,20);
         networkMap.put(2,temp);
-        temp = new ArrayList<>();
-        temp.add(new Pair<>(1,20));
-        temp.add(new Pair<>(2,20));
-        temp.add(new Pair<>(4,30));
+        temp = new HashMap<>();
+        temp.put(1,20);
+        temp.put(2,20);
+        temp.put(4,30);
         networkMap.put(3,temp);
-        temp = new ArrayList<>();
-        temp.add(new Pair<>(3,30));
+        temp = new HashMap<>();
+        temp.put(3,30);
         networkMap.put(4,temp);
-        if (args.length == 1) {
+        if (args.length >= 1 && args[0].equals("-c")) {
             System.out.println("Config file provided");
-            filename = args[0];
-
+            filename = args[1];
         }
         try {
             System.out.println("Trying to parse conf file");
@@ -310,9 +308,9 @@ public class VodServer {
                 for (Integer n: networkMap.keySet())
                 {
                     JSONObject temp = new JSONObject();
-                    for (Pair<Integer,Integer> neighbor: networkMap.get(n))
+                    for (Integer neighbor: networkMap.get(n).keySet())
                     {
-                        temp.put("node" + neighbor.getKey(), neighbor.getValue());
+                        temp.put("node" + neighbor, networkMap.get(n).get(neighbor));
                     }
                     mapJSON.put("node" + n, temp);
                 }
@@ -338,26 +336,26 @@ public class VodServer {
                 out.writeBytes("Content-Type: application/json\r\n\r\n");
                 JSONArray arr = new JSONArray();
                 Map<Integer,Integer> sPaths = find_shortest_paths(node);
-                ArrayList<Pair<Integer,Integer>> unsortedPaths = new ArrayList<>();
+                ArrayList<Integer> unsortedPaths = new ArrayList<>();
                 for (Integer n: sPaths.keySet())
                 {
                     if (n != node ) {
                         int d = sPaths.get(n);
 
                         int i = 0;
-                        for (Pair<Integer, Integer> j : unsortedPaths) {
-                            if (j.getValue() > d) {
+                        for (Integer j : unsortedPaths) {
+                            if (sPaths.get(j) > d) {
                                 break;
                             }
                             i++;
                         }
-                        unsortedPaths.add(i, new Pair<>(n, d));
+                        unsortedPaths.add(i, n);
                     }
                 }
-                for (Pair<Integer,Integer> j : unsortedPaths)
+                for (Integer j : unsortedPaths)
                 {
                     JSONObject temp = new JSONObject();
-                    temp.put("node" + j.getKey(), j.getValue());
+                    temp.put("node" + j, sPaths.get(j));
                     arr.add(temp);
                 }
 
@@ -680,10 +678,10 @@ public class VodServer {
             queue.remove(minP);
             if (result.containsKey(minP)) continue;
             result.put(minP,minV);
-            for (Pair<Integer,Integer> p : networkMap.get(minP))
+            for (Integer n : networkMap.get(minP).keySet())
             {
-                int node = p.getKey();
-                int distance = p.getValue();
+                int node = n;
+                int distance = networkMap.get(minP).get(n);
                 if (queue.containsKey(node))
                 {
                     queue.put(node,Integer.min(queue.get(node),distance));
