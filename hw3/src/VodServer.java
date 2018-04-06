@@ -375,11 +375,6 @@ public class VodServer {
                 dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
                 String time = dateFormat.format(Calendar.getInstance().getTime());
                 System.out.println("returning uuid");
-                OutputStream os = clientSocket.getOutputStream();
-                out.writeBytes("HTTP/1.1 200 OK\r\n");
-                out.writeBytes("Date: " + time + "\r\n");
-                out.writeBytes("Connection: Keep-Alive\r\n");
-                out.writeBytes("Content-Type: application/json\r\n\r\n");
                 JSONArray arr = new JSONArray();
                 for (Peer p : peers.values())
                 {
@@ -393,6 +388,13 @@ public class VodServer {
                     arr.add(peer);
                 }
                 byte [] mybytearray = arr.toJSONString().getBytes();
+                OutputStream os = clientSocket.getOutputStream();
+                out.writeBytes("HTTP/1.1 200 OK\r\n");
+                out.writeBytes("Date: " + time + "\r\n");
+                out.writeBytes("Connection: Keep-Alive\r\n");
+                out.writeBytes("Content-Length: " + mybytearray.length + "\r\n");
+                out.writeBytes("Content-Type: application/json\r\n\r\n");
+
                 //os.write(mybytearray, 0, mybytearray.length);
                 out.write(mybytearray, 0, mybytearray.length);
                 System.out.println("Done.");
@@ -438,6 +440,7 @@ public class VodServer {
                 out.writeBytes("Date: " + time + "\r\n");
                 out.writeBytes("Connection: Keep-Alive\r\n");
                 out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
+
                 System.out.println(getContentType(filepath));
                 os.write(mybytearray, 0, mybytearray.length);
                 System.out.println("Done.");
