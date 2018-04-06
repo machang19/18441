@@ -146,6 +146,7 @@ public class BackendServer {
             if (fileLookup.containsKey(filename))
             {
                 fileLookup.get(filename).add(hostAddress);
+
             }
             else
             {
@@ -278,5 +279,24 @@ public class BackendServer {
 
     public void setRate(int rate) {
         this.bandwidth = rate;
+    }
+
+    public boolean checkContent(String filename, String hostname){
+        try {
+            System.out.println("Checking if content exists");
+            InetAddress hostAddress = InetAddress.getByName(hostname);
+            CopyOnWriteArrayList<InetAddress> result;
+            result = fileLookup.get(filename);
+            for (InetAddress iadd : result) {
+                if (hostAddress == iadd) {
+                    System.out.println("Found content");
+                    return true;
+                }
+            }
+        }
+        catch(Exception e) {
+            System.out.println(e);
+        }
+        return false;
     }
 }

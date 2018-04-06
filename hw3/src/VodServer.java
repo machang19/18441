@@ -1,5 +1,7 @@
+import javafx.util.Pair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import java.net.*;
 import java.io.*;
@@ -18,19 +20,37 @@ public class VodServer {
     static ExecutorService threadPool = Executors.newFixedThreadPool(12);
     static BackendServer bServer = new BackendServer();
     static String uuid;
-    static String name;
+    static int node;
     static int frontend_port;
     static int backend_port;
     static String content_dir;
     static int peer_count;
     static ConcurrentMap<String, Peer> peers = new ConcurrentHashMap<>();
-    static ConcurrentMap<String,List<String>> networkMap = new ConcurrentHashMap<>();
+    static ConcurrentMap<Integer, Peer> nodeToPeer = new ConcurrentHashMap<>();
+    static ConcurrentMap<Integer,List<Pair<Integer,Integer>>> networkMap = new ConcurrentHashMap<>();
     public static void main(String[] args) throws IOException {
         ServerSocket serverSocket = null;
         String filename = "node.conf";
+        ArrayList<Pair<Integer,Integer>> temp = new ArrayList<>();
+        temp.add(new Pair<>(2,10));
+        temp.add(new Pair<>(3,20));
+        networkMap.put(1,temp);
+        temp = new ArrayList<>();
+        temp.add(new Pair<>(1,10));
+        temp.add(new Pair<>(3,20));
+        networkMap.put(2,temp);
+        temp = new ArrayList<>();
+        temp.add(new Pair<>(1,20));
+        temp.add(new Pair<>(2,20));
+        temp.add(new Pair<>(4,30));
+        networkMap.put(3,temp);
+        temp = new ArrayList<>();
+        temp.add(new Pair<>(3,30));
+        networkMap.put(4,temp);
         if (args.length == 1) {
             System.out.println("Config file provided");
             filename = args[0];
+
         }
         try {
             System.out.println("Trying to parse conf file");
@@ -56,18 +76,23 @@ public class VodServer {
             );
             threadPool.submit(() -> {
                 Long time = System.nanoTime();
+                int numFails = 0;
                 while (true) {
-                    try {
-                        if (((System.nanoTime() - time) / 1_000_000_000.0) > 10.0)
-                        {
-                            updateNetworkMap();
-                            time = System.nanoTime();
+                    for (Peer p : peers.values()) {
+                        try {
+                            if (((System.nanoTime() - time) / 1_000_000_000.0) >= 10.0) {
+                                time = System.nanoTime();
+                                updateNetworkMap(p);
+                                numFails = 0;
+                            }
+                        } catch (Exception e) {
+                            System.out.println(e);
+                            numFails += 1;
+                            if (numFails >= 3) {
+                                System.out.println("3 Fails: neighbor " + p.getUuid() + " unreachable");
+                                peers.remove(p.getUuid());
+                            }
                         }
-
-
-                    }
-                    catch(Exception e){
-                        System.out.println(e);
                     }
                 }
             });
@@ -104,37 +129,44 @@ public class VodServer {
         serverSocket.close();
     }
 
-    private static void updateNetworkMap() throws Exception{
-        for (Peer p : peers.values()){
+    private static void updateNetworkMap(Peer p) throws Exception{
+        System.out.println("here");
+        Socket socket = new Socket(p.getHostname(), p.getFport());
+        DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+        BufferedReader in = new BufferedReader(
+                new InputStreamReader(socket.getInputStream()));
 
-            System.out.println("here");
-            Socket socket = new Socket(p.getHostname(), p.getFport());
-            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(socket.getInputStream()));
-
-            SimpleDateFormat dateFormat = new SimpleDateFormat(
-                    "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-            dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-            String time = dateFormat.format(Calendar.getInstance().getTime());
-            System.out.println("updating network map");
-            OutputStream os = socket.getOutputStream();
-            out.writeBytes("GET /peer/neighbors HTTP/1.1\r\n");
-            out.writeBytes("Date: " + time + "\r\n");
-            out.writeBytes("Connection: Keep-Alive\r\n");
-            out.writeBytes("Content-Type: application/json\r\n\r\n");
-            System.out.println("Done.");
-            String temp = in.readLine();
-            while (temp.length() > 0)
-            {
-                System.out.println(temp);
-                temp = in.readLine();
-            }
-            out.close();
-            in.close();
-            socket.close();
-
+        SimpleDateFormat dateFormat = new SimpleDateFormat(
+                "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+        String time = dateFormat.format(Calendar.getInstance().getTime());
+        System.out.println("updating network map");
+        OutputStream os = socket.getOutputStream();
+        out.writeBytes("GET /peer/neighbors HTTP/1.1\r\n");
+        out.writeBytes("Date: " + time + "\r\n");
+        out.writeBytes("Connection: Keep-Alive\r\n");
+        out.writeBytes("Content-Type: application/json\r\n\r\n");
+        System.out.println("Done.");
+        String temp;
+        StringBuffer response = new StringBuffer();
+        while ((temp = in.readLine())!= null ) {
+            response.append(temp);
+            System.out.println(temp);
         }
+
+        //print in String
+        System.out.println("here");
+        System.out.println(response.toString());
+        System.out.println("here");
+        //Read JSON response and print
+        JSONParser parser = new JSONParser();
+        JSONObject json = (JSONObject) parser.parse(response.toString());
+        System.out.println("here");
+        System.out.println(json.toJSONString());
+        System.out.println("here");
+        out.close();
+        socket.close();
+        in.close();
     }
 
     static String getContentType(String filename) {
@@ -226,6 +258,8 @@ public class VodServer {
                 System.out.println("we are adding");
                 bServer.addPeer(filepath, uri_params.get("host"), parseInt(uri_params.get("port")) );
                 return;
+            }else if (peerInfo[2].equals("kill")) {
+                System.exit(0);// 0, 0 are dummy args dont do anything yet
             }
             else if (peerInfo[2].equals("view")) {
                 filepath = peerInfo[3];
@@ -261,7 +295,7 @@ public class VodServer {
                 clientSocket.close();
                 return;
             }
-            else if (peerInfo[2].equals("neighbors")) {
+            else if (peerInfo[2].equals("map")) {
                 SimpleDateFormat dateFormat = new SimpleDateFormat(
                         "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
                 dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
@@ -272,6 +306,75 @@ public class VodServer {
                 out.writeBytes("Date: " + time + "\r\n");
                 out.writeBytes("Connection: Keep-Alive\r\n");
                 out.writeBytes("Content-Type: application/json\r\n\r\n");
+                JSONObject mapJSON = new JSONObject();
+                for (Integer n: networkMap.keySet())
+                {
+                    JSONObject temp = new JSONObject();
+                    for (Pair<Integer,Integer> neighbor: networkMap.get(n))
+                    {
+                        temp.put("node" + neighbor.getKey(), neighbor.getValue());
+                    }
+                    mapJSON.put("node" + n, temp);
+                }
+
+                byte [] mybytearray = mapJSON.toJSONString().getBytes();
+                os.write(mybytearray, 0, mybytearray.length);
+                System.out.println("Done.");
+                out.close();
+                in.close();
+                clientSocket.close();
+                return;
+            }
+            else if (peerInfo[2].equals("rank")) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat(
+                        "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+                dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                String time = dateFormat.format(Calendar.getInstance().getTime());
+                System.out.println("returning uuid");
+                OutputStream os = clientSocket.getOutputStream();
+                out.writeBytes("HTTP/1.1 200 OK\r\n");
+                out.writeBytes("Date: " + time + "\r\n");
+                out.writeBytes("Connection: Keep-Alive\r\n");
+                out.writeBytes("Content-Type: application/json\r\n\r\n");
+                JSONArray arr = new JSONArray();
+                Map<Integer,Integer> sPaths = find_shortest_paths(node);
+                ArrayList<Pair<Integer,Integer>> unsortedPaths = new ArrayList<>();
+                for (Integer n: sPaths.keySet())
+                {
+                    if (n != node ) {
+                        int d = sPaths.get(n);
+
+                        int i = 0;
+                        for (Pair<Integer, Integer> j : unsortedPaths) {
+                            if (j.getValue() > d) {
+                                break;
+                            }
+                            i++;
+                        }
+                        unsortedPaths.add(i, new Pair<>(n, d));
+                    }
+                }
+                for (Pair<Integer,Integer> j : unsortedPaths)
+                {
+                    JSONObject temp = new JSONObject();
+                    temp.put("node" + j.getKey(), j.getValue());
+                    arr.add(temp);
+                }
+
+                byte [] mybytearray = arr.toJSONString().getBytes();
+                os.write(mybytearray, 0, mybytearray.length);
+                System.out.println("Done.");
+                out.close();
+                in.close();
+                clientSocket.close();
+                return;
+            }
+            else if (peerInfo[2].equals("neighbors")) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat(
+                        "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+                dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                String time = dateFormat.format(Calendar.getInstance().getTime());
+                System.out.println("returning uuid");
                 JSONArray arr = new JSONArray();
                 for (Peer p : peers.values())
                 {
@@ -285,7 +388,15 @@ public class VodServer {
                     arr.add(peer);
                 }
                 byte [] mybytearray = arr.toJSONString().getBytes();
-                os.write(mybytearray, 0, mybytearray.length);
+                OutputStream os = clientSocket.getOutputStream();
+                out.writeBytes("HTTP/1.1 200 OK\r\n");
+                out.writeBytes("Date: " + time + "\r\n");
+                out.writeBytes("Connection: Keep-Alive\r\n");
+                out.writeBytes("Content-Length: " + mybytearray.length + "\r\n");
+                out.writeBytes("Content-Type: application/json\r\n\r\n");
+
+                //os.write(mybytearray, 0, mybytearray.length);
+                out.write(mybytearray, 0, mybytearray.length);
                 System.out.println("Done.");
                 out.close();
                 in.close();
@@ -329,6 +440,7 @@ public class VodServer {
                 out.writeBytes("Date: " + time + "\r\n");
                 out.writeBytes("Connection: Keep-Alive\r\n");
                 out.writeBytes("Content-Type: " + getContentType(filepath) + "\r\n\r\n");
+
                 System.out.println(getContentType(filepath));
                 os.write(mybytearray, 0, mybytearray.length);
                 System.out.println("Done.");
@@ -498,32 +610,26 @@ public class VodServer {
             int equalsInd = line.indexOf("=");
             if (line.startsWith("uuid")) {
                 String c_uuid = line.substring(equalsInd+1, line.length()).trim();
-                System.out.println("uuid is: " + c_uuid);
                 uuid = c_uuid;
             }
             else if(line.startsWith("name")) {
                 String hostname = line.substring(equalsInd+1, line.length()).trim();
-                System.out.println("name is " + hostname);
-                name = hostname;
+                node = parseInt(hostname.substring(4,hostname.length()));;
             }
             else if(line.startsWith("frontend_port")) {
                 String fport = line.substring(equalsInd+1, line.length()).trim();
-                System.out.println("frontend port is " + fport);
                 frontend_port = Integer.parseInt(fport);
             }
             else if(line.startsWith("backend_port")) {
                 String bport = line.substring(equalsInd+1, line.length()).trim();
-                System.out.println("backend port is " + bport);
                 backend_port = parseInt(bport);
             }
             else if(line.startsWith("content_dir")) {
                 String dir = line.substring(equalsInd+1, line.length()).trim();
-                System.out.println("content directory is " + dir);
                 content_dir = dir;
             }
             else if(line.startsWith("peer_count")) {
                 String numPeers = line.substring(equalsInd+1,line.length()).trim();
-                System.out.println("peer count is " + numPeers);
                 peer_count  = parseInt(numPeers);
             }
             else if(line.startsWith("peer_")) {
@@ -551,5 +657,44 @@ public class VodServer {
         }
         System.out.println("returning from parse_conf");
         return 0;
+    }
+
+    private static Map<Integer,Integer> find_shortest_paths(Integer start)
+    {
+        Map<Integer,Integer> queue = new HashMap<>();
+        Map<Integer,Integer> result = new HashMap<>();
+        queue.put(start,0);
+        while (queue.size() > 0)
+        {
+            int minV = -1;
+            int minP = -1;
+            for (Integer node : queue.keySet())
+            {
+                int v = queue.get(node);
+                if (minP == -1 || v < minV)
+                {
+                    minP = node;
+                    minV = v;
+                }
+            }
+            queue.remove(minP);
+            if (result.containsKey(minP)) continue;
+            result.put(minP,minV);
+            for (Pair<Integer,Integer> p : networkMap.get(minP))
+            {
+                int node = p.getKey();
+                int distance = p.getValue();
+                if (queue.containsKey(node))
+                {
+                    queue.put(node,Integer.min(queue.get(node),distance));
+                }
+                else
+                {
+                    queue.put(node,distance + minV);
+                }
+            }
+
+        }
+        return result;
     }
 }
