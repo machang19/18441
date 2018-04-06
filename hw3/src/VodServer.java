@@ -46,10 +46,9 @@ public class VodServer {
         temp = new HashMap<>();
         temp.put(3,30);
         networkMap.put(4,temp);
-        if (args.length == 1) {
+        if (args.length >= 1 && args[0].equals("-c")) {
             System.out.println("Config file provided");
-            filename = args[0];
-
+            filename = args[1];
         }
         try {
             System.out.println("Trying to parse conf file");
