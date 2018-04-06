@@ -46,10 +46,10 @@ public class VodServer {
         temp = new HashMap<>();
         temp.put(3,30);
         networkMap.put(4,temp);
-        if (args.length >= 1 && args[0].equals("-c")) {
-            System.out.println("Config file provided");
-            filename = args[1];
-        }
+//        if (args.length >= 1 && args[0].equals("-c")) {
+//            System.out.println("Config file provided");
+//            filename = args[1];
+//        }
         try {
             System.out.println("Trying to parse conf file");
             int i = parse_conf(filename);
@@ -147,7 +147,8 @@ public class VodServer {
         System.out.println("Done.");
         String temp;
         StringBuffer response = new StringBuffer();
-        while ((temp = in.readLine())!= null ) {
+        System.out.println("about to print");
+        while ((temp = in.readLine()).length() > 0) {
             response.append(temp);
             System.out.println(temp);
         }
@@ -374,6 +375,13 @@ public class VodServer {
                 String time = dateFormat.format(Calendar.getInstance().getTime());
                 System.out.println("returning uuid");
                 JSONArray arr = new JSONArray();
+
+                OutputStream os = clientSocket.getOutputStream();
+                out.writeBytes("HTTP/1.1 200 OK\r\n");
+                out.writeBytes("Date: " + time + "\r\n");
+                out.writeBytes("Connection: Keep-Alive\r\n");
+                //out.writeBytes("Content-Length: " + mybytearray.length + "\r\n");
+                out.writeBytes("Content-Type: application/json\r\n\r\n");
                 for (Peer p : peers.values())
                 {
                     JSONObject peer = new JSONObject();
@@ -386,13 +394,6 @@ public class VodServer {
                     arr.add(peer);
                 }
                 byte [] mybytearray = arr.toJSONString().getBytes();
-                OutputStream os = clientSocket.getOutputStream();
-                out.writeBytes("HTTP/1.1 200 OK\r\n");
-                out.writeBytes("Date: " + time + "\r\n");
-                out.writeBytes("Connection: Keep-Alive\r\n");
-                out.writeBytes("Content-Length: " + mybytearray.length + "\r\n");
-                out.writeBytes("Content-Type: application/json\r\n\r\n");
-
                 //os.write(mybytearray, 0, mybytearray.length);
                 out.write(mybytearray, 0, mybytearray.length);
                 System.out.println("Done.");
