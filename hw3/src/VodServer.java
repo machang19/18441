@@ -281,10 +281,7 @@ public class VodServer {
                 String time = dateFormat.format(Calendar.getInstance().getTime());
                 System.out.println("returning uuid");
                 OutputStream os = clientSocket.getOutputStream();
-                out.writeBytes("HTTP/1.1 200 OK\r\n");
-                out.writeBytes("Date: " + time + "\r\n");
-                out.writeBytes("Connection: Keep-Alive\r\n");
-                out.writeBytes("Content-Type: application/json\r\n\r\n");
+
                 JSONArray arr = new JSONArray();
                 for (Peer p : peers.values())
                 {
@@ -298,6 +295,13 @@ public class VodServer {
                     arr.add(peer);
                 }
                 byte [] mybytearray = arr.toJSONString().getBytes();
+
+                out.writeBytes("HTTP/1.1 200 OK\r\n");
+                out.writeBytes("Accept: application/json\r\n");
+                out.writeBytes("Date: " + time + "\r\n");
+                out.writeBytes("Connection: Keep-Alive\r\n");
+                out.writeBytes("Content-Length: " + mybytearray.length() + "\r\n");
+                out.writeBytes("Content-Type: application/json\r\n\r\n");
                 //os.write(mybytearray, 0, mybytearray.length);
                 out.write(mybytearray, 0, mybytearray.length);
                 System.out.println("Done.");
