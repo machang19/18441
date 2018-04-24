@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Date;
 import java.net.*;
 import java.io.*;
@@ -140,6 +141,16 @@ public class BackendServer {
             }
         }
     }
+
+
+
+    public List<String> findPeers(String filename){
+        List<String> result = new ArrayList<>();
+        result.add("test1");
+        result.add("test2");
+        return result;
+    }
+
     public void addPeer(String filename, String host, int port) throws IOException {
         try {
             InetAddress hostAddress = InetAddress.getByName(host);

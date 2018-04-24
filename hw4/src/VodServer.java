@@ -294,6 +294,40 @@ public class VodServer {
                 clientSocket.close();
                 return;
             }
+            else if (peerInfo[2].substring(0,6).equals("search")) {
+                filepath = peerInfo[3];
+                System.out.println("we are searching for " + filepath);
+                List<String> peersWithFile = bServer.findPeers(filepath);
+                SimpleDateFormat dateFormat = new SimpleDateFormat(
+                        "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+                dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+                String time = dateFormat.format(Calendar.getInstance().getTime());
+                System.out.println("returning uuid");
+                OutputStream os = clientSocket.getOutputStream();
+                out.writeBytes("HTTP/1.1 200 OK\r\n");
+                out.writeBytes("Date: " + time + "\r\n");
+                out.writeBytes("Connection: Keep-Alive\r\n");
+                out.writeBytes("Content-Type: application/json\r\n\r\n");
+                JSONObject fileObj = new JSONObject();
+                JSONArray arr = new JSONArray();
+                fileObj.put("content", filepath);
+                arr.add(fileObj);
+                JSONArray peers = new JSONArray();
+                JSONObject peerObj = new JSONObject();
+                for (String s: peersWithFile)
+                {
+                    peers.add(s);
+                }
+                peerObj.put("peers",peers);
+                arr.add(peerObj);
+                byte [] mybytearray = arr.toJSONString().getBytes();
+                os.write(mybytearray, 0, mybytearray.length);
+                System.out.println("Done.");
+                out.close();
+                in.close();
+                clientSocket.close();
+                return;
+            }
             else if (peerInfo[2].equals("map")) {
                 SimpleDateFormat dateFormat = new SimpleDateFormat(
                         "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
