@@ -24,6 +24,8 @@ public class VodServer {
     static int backend_port;
     static String content_dir;
     static int peer_count;
+    static int search_ttl;
+    static int search_interval;
     static ConcurrentMap<String, Peer> peers = new ConcurrentHashMap<>();
     static ConcurrentMap<Integer, Peer> nodeToPeer = new ConcurrentHashMap<>();
     static ConcurrentMap<Integer,Map<Integer,Integer>> networkMap = new ConcurrentHashMap<>();
@@ -637,6 +639,8 @@ public class VodServer {
         backend_port = 18346;
         content_dir = "content/";
         peer_count = 0;
+        search_ttl = 15;
+        search_interval = 100;
 
         while ( (line = br.readLine()) != null) {
             // System.out.print("Line: " + line + ".....");
@@ -664,6 +668,14 @@ public class VodServer {
             else if(line.startsWith("peer_count")) {
                 String numPeers = line.substring(equalsInd+1,line.length()).trim();
                 peer_count  = parseInt(numPeers);
+            }
+            else if(line.startsWith("search_ttl")) {
+                String ttl = line.substring(equalsInd+1,line.length()).trim();
+                search_ttl = parseInt(ttl);
+            }
+            else if(line.startsWith("search_interval")) {
+                String interval = line.substring(equalsInd+1,line.length()).trim();
+                search_interval = parseInt(interval);
             }
             else if(line.startsWith("peer_")) {
                 String peer_name = line.substring(0, equalsInd-1).trim();
