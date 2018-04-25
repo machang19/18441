@@ -299,7 +299,7 @@ public class VodServer {
             else if (peerInfo[2].substring(0,6).equals("search")) {
                 filepath = peerInfo[3];
                 System.out.println("we are searching for " + filepath);
-                List<String> peersWithFile = bServer.findPeers(filepath);
+                List<String> peersWithFile = bServer.findPeers(filepath, peers.values());
                 SimpleDateFormat dateFormat = new SimpleDateFormat(
                         "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
                 dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));

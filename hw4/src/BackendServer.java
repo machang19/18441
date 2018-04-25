@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.net.*;
 import java.io.*;
@@ -62,6 +63,10 @@ public class BackendServer {
             String request = new String(arr2, 0, packSize);
             System.out.println(request);
 
+            if (request.startsWith("do yo have"))
+            {
+                System.out.println(request);
+            }
             if (request.startsWith("Send this file:")) {
                 DatagramSocket dsock5 = new DatagramSocket(port);
                 String filepath = request.substring(15, request.length());
@@ -144,8 +149,23 @@ public class BackendServer {
 
 
 
-    public List<String> findPeers(String filename){
+    public List<String> findPeers(String filename, Collection<Peer> neighbors) {
         List<String> result = new ArrayList<>();
+        try {
+            for (Peer p : neighbors)
+            {
+                dsock = new DatagramSocket();
+                String message = "do yo have " + filename;
+                byte arr[] = message.getBytes();
+                InetAddress a = InetAddress.getByName(p.getHostname());
+                DatagramPacket ack = new DatagramPacket(arr, arr.length, a, p.getBport());
+                dsock.send(ack);
+            }
+        }
+        catch (Exception E)
+        {
+            System.out.println(E);
+        }
         result.add("test1");
         result.add("test2");
         return result;
