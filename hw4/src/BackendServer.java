@@ -18,10 +18,18 @@ public class BackendServer {
     static ConcurrentMap<String, Peer> peers = new ConcurrentHashMap<>();
     private static ConcurrentMap<String, Set<String>> searchDict = new ConcurrentHashMap<>();
     private static String uuid;
-    public BackendServer() {
+    public BackendServer(String uuid) {
         this.filename = "";
         this.sock = null;
+        this.uuid = uuid;
     }
+
+    public static void setPeers(ConcurrentMap<String, Peer> peers) {
+        BackendServer.peers = peers;
+    }
+
+
+
     private static void initialConnectionSetup(DatagramPacket dpack, File file, int port) {
         try {
             // tell client what size the file is
@@ -79,6 +87,7 @@ public class BackendServer {
                     searchDict.get(filename).add(uuid);
                 }
                 int ttl = parseInt(rArgs[4]);
+                int search_interval = parseInt(rArgs[5]);
                 dsock = new DatagramSocket();
                 String message = "";
                 for (String s: searchDict.get(filename))
@@ -91,9 +100,16 @@ public class BackendServer {
                 dsock.send(ack);
                 for (Peer p : peers.values())
                 {
-                    Set<String> result = findPeers(filename,p,ttl);
+                    Set<String> result = findPeers(filename,p,ttl, search_interval);
                     ttl = ttl-1;
                     searchDict.get(filename).addAll(result);
+                    try {
+                        Thread.sleep(search_interval);
+                    }
+                    catch (Exception e )
+                    {
+                        System.out.println(e);
+                    }
                 }
 
             }
@@ -179,7 +195,7 @@ public class BackendServer {
 
 
 
-    public static Set<String> findPeers(String filename, Peer p, int ttl) {
+    public static Set<String> findPeers(String filename, Peer p, int ttl, int interval) {
         Set<String> result = new HashSet<>();
         System.out.println("here");
         if (ttl == 0)
@@ -189,7 +205,7 @@ public class BackendServer {
         try {
             System.out.println(p.getHostname());
             dsock = new DatagramSocket();
-            String message = "do yo have " + filename + " " + (ttl-1);
+            String message = "do yo have " + filename + " " + (ttl-1) + " " + interval;
             byte arr[] = message.getBytes();
             InetAddress a = InetAddress.getByName(p.getHostname());
             DatagramPacket ack = new DatagramPacket(arr, arr.length, a, p.getBport());

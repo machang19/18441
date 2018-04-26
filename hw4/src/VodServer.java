@@ -17,7 +17,7 @@ import static java.lang.Integer.parseInt;
 
 public class VodServer {
     static ExecutorService threadPool = Executors.newFixedThreadPool(12);
-    static BackendServer bServer = new BackendServer();
+    static BackendServer bServer;
     static String uuid;
     static int node;
     static int frontend_port;
@@ -55,6 +55,7 @@ public class VodServer {
         try {
             System.out.println("Trying to parse conf file");
             int i = parse_conf(filename);
+            bServer = new BackendServer(uuid);
         }
         catch (Exception e) {
             System.out.println("Cannot read file: " + filename);
@@ -303,9 +304,16 @@ public class VodServer {
                 int ttl = search_ttl;
                 for (Peer p : peers.values())
                 {
-                    Set<String> result = bServer.findPeers(filepath,p,ttl);
+                    Set<String> result = bServer.findPeers(filepath,p,ttl,search_interval);
                     ttl = ttl-1;
                     peersWithFile.addAll(result);
+                    try {
+                        Thread.sleep(search_interval);
+                    }
+                    catch (Exception e )
+                    {
+                        System.out.println(e);
+                    }
                 }
                 SimpleDateFormat dateFormat = new SimpleDateFormat(
                         "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
@@ -634,6 +642,7 @@ public class VodServer {
         }
         result.setNode(max + 1);
         peers.put(result.getUuid(), result);
+        bServer.setPeers(peers);
     }
 
     private static int parse_conf(String filename) throws Exception {
@@ -690,6 +699,7 @@ public class VodServer {
                 Peer peer = new Peer();
                 peer.update_params(peer_name,peer_info);
                 peers.put(peer.getUuid(), peer);
+                bServer.setPeers(peers);
             }
             else {
                 System.out.println("Don't recognize line: " + line);
