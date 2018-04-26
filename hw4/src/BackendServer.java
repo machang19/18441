@@ -12,7 +12,7 @@ public class BackendServer {
     private static String filename;
     private static DatagramSocket dsock;
     private Socket sock;
-    public static int bandwidth;
+    public static int bandwidth = 50000;
     private  ConcurrentMap<String, CopyOnWriteArrayList<InetAddress>> fileLookup = new ConcurrentHashMap<>();
     private ConcurrentMap<InetAddress, Integer> portLookup = new ConcurrentHashMap<>();
     static ConcurrentMap<String, Peer> peers = new ConcurrentHashMap<>();
@@ -223,9 +223,11 @@ public class BackendServer {
             byte[] data = dpack.getData();
             int length = dpack.getLength();
             String response = new String(data, 0, length);
-            for (String s : response.split(","))
+            for (String s : response.split(" "))
             {
-                result.add(s);
+                if (!s.equals("")) {
+                    result.add(s);
+                }
             }
             return result;
 
