@@ -1,9 +1,6 @@
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
+import java.util.*;
 import java.net.*;
 import java.io.*;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -18,6 +15,9 @@ public class BackendServer {
     public static int bandwidth;
     private  ConcurrentMap<String, CopyOnWriteArrayList<InetAddress>> fileLookup = new ConcurrentHashMap<>();
     private ConcurrentMap<InetAddress, Integer> portLookup = new ConcurrentHashMap<>();
+    static ConcurrentMap<String, Peer> peers = new ConcurrentHashMap<>();
+    private static ConcurrentMap<String, Set<String>> searchDict = new ConcurrentHashMap<>();
+    private static String uuid;
     public BackendServer() {
         this.filename = "";
         this.sock = null;
@@ -65,7 +65,37 @@ public class BackendServer {
 
             if (request.startsWith("do yo have"))
             {
-                System.out.println(request);
+                String[] rArgs = request.split(" ");
+                String filename = rArgs[3];
+                boolean shouldSearch = false;
+                File f = new File(filename);
+
+                if (!searchDict.containsKey(filename))
+                {
+                    searchDict.put(filename,new HashSet<>());
+                    shouldSearch = true;
+                }
+                if(f.exists() && !f.isDirectory()) {
+                    searchDict.get(filename).add(uuid);
+                }
+                int ttl = parseInt(rArgs[4]);
+                dsock = new DatagramSocket();
+                String message = "";
+                for (String s: searchDict.get(filename))
+                {
+                    message += " " + s;
+                }
+                byte arr[] = message.getBytes();
+                InetAddress a = dpack.getAddress();
+                DatagramPacket ack = new DatagramPacket(arr, arr.length, a, dpack.getPort());
+                dsock.send(ack);
+                for (Peer p : peers.values())
+                {
+                    Set<String> result = findPeers(filename,p,ttl);
+                    ttl = ttl-1;
+                    searchDict.get(filename).addAll(result);
+                }
+
             }
             if (request.startsWith("Send this file:")) {
                 DatagramSocket dsock5 = new DatagramSocket(port);
@@ -149,25 +179,39 @@ public class BackendServer {
 
 
 
-    public List<String> findPeers(String filename, Collection<Peer> neighbors) {
-        List<String> result = new ArrayList<>();
+    public static Set<String> findPeers(String filename, Peer p, int ttl) {
+        Set<String> result = new HashSet<>();
+        System.out.println("here");
+        if (ttl == 0)
+        {
+            return result;
+        }
         try {
-            for (Peer p : neighbors)
+            System.out.println(p.getHostname());
+            dsock = new DatagramSocket();
+            String message = "do yo have " + filename + " " + (ttl-1);
+            byte arr[] = message.getBytes();
+            InetAddress a = InetAddress.getByName(p.getHostname());
+            DatagramPacket ack = new DatagramPacket(arr, arr.length, a, p.getBport());
+            dsock.send(ack);
+            arr = new byte[300];
+            DatagramPacket dpack = new DatagramPacket(arr, arr.length, a, p.getBport());
+            dsock.setSoTimeout(1000);
+            dsock.receive(dpack);
+            byte[] data = dpack.getData();
+            int length = dpack.getLength();
+            String response = new String(data, 0, length);
+            for (String s : response.split(","))
             {
-                dsock = new DatagramSocket();
-                String message = "do yo have " + filename;
-                byte arr[] = message.getBytes();
-                InetAddress a = InetAddress.getByName(p.getHostname());
-                DatagramPacket ack = new DatagramPacket(arr, arr.length, a, p.getBport());
-                dsock.send(ack);
+                result.add(s);
             }
+            return result;
+
         }
         catch (Exception E)
         {
             System.out.println(E);
         }
-        result.add("test1");
-        result.add("test2");
         return result;
     }
 
