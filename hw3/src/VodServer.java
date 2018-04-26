@@ -52,6 +52,10 @@ public class VodServer {
 //        }
         try {
             System.out.println("Trying to parse conf file");
+            if (args.length >= 1)
+            {
+                filename = args[0];
+            }
             int i = parse_conf(filename);
         }
         catch (Exception e) {
