@@ -25,7 +25,6 @@
     <target name="run">
         <java jar="build/jar/VodServer.jar" fork="true">
             <arg value="${arg0}"/>
-            <arg value="${arg1}"/>
         </java>
     </target>
 
