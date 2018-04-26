@@ -73,6 +73,7 @@ public class BackendServer {
 
             if (request.startsWith("do yo have"))
             {
+                System.out.println("we here");
                 String[] rArgs = request.split(" ");
                 String filename = rArgs[3];
                 boolean shouldSearch = false;
@@ -84,31 +85,36 @@ public class BackendServer {
                     shouldSearch = true;
                 }
                 if(f.exists() && !f.isDirectory()) {
+                    System.out.println("we have file");
                     searchDict.get(filename).add(uuid);
                 }
                 int ttl = parseInt(rArgs[4]);
                 int search_interval = parseInt(rArgs[5]);
+                System.out.println(filename);
+                System.out.println(ttl);
+                System.out.println(search_interval);
                 dsock = new DatagramSocket();
                 String message = "";
+                System.out.println(searchDict.get(filename));
                 for (String s: searchDict.get(filename))
                 {
                     message += " " + s;
                 }
+                System.out.println(message);
                 byte arr[] = message.getBytes();
                 InetAddress a = dpack.getAddress();
                 DatagramPacket ack = new DatagramPacket(arr, arr.length, a, dpack.getPort());
                 dsock.send(ack);
-                for (Peer p : peers.values())
-                {
-                    Set<String> result = findPeers(filename,p,ttl, search_interval);
-                    ttl = ttl-1;
-                    searchDict.get(filename).addAll(result);
-                    try {
-                        Thread.sleep(search_interval);
-                    }
-                    catch (Exception e )
-                    {
-                        System.out.println(e);
+                if (shouldSearch) {
+                    for (Peer p : peers.values()) {
+                        Set<String> result = findPeers(filename, p, ttl, search_interval);
+                        ttl = ttl - 1;
+                        searchDict.get(filename).addAll(result);
+                        try {
+                            Thread.sleep(search_interval);
+                        } catch (Exception e) {
+                            System.out.println(e);
+                        }
                     }
                 }
 

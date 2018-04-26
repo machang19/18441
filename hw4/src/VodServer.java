@@ -96,7 +96,7 @@ public class VodServer {
                             numFails += 1;
                             if (numFails >= 3) {
                                 System.out.println("3 Fails: neighbor " + p.getUuid() + " unreachable");
-                                peers.remove(p.getUuid());
+                                //peers.remove(p.getUuid());
                             }
                         }
                     }
