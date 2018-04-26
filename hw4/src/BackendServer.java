@@ -289,11 +289,11 @@ public class BackendServer {
         }
         return false;
     }
-    public byte[] getContent(int start, int end, String filename) {
+    public byte[] getContent(int start, int end, String filename, Peer p) {
         try {
             System.out.println("trying to send");
-            InetAddress host = fileLookup.get(filename).get(0);
-            int port = portLookup.get(host);
+            InetAddress host = InetAddress.getByName(p.getHostname());
+            int port = p.getBport();
 
             // request file from peer
             String message1 = "Send this file:" + filename;

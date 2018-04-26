@@ -29,6 +29,7 @@ public class VodServer {
     static ConcurrentMap<String, Peer> peers = new ConcurrentHashMap<>();
     static ConcurrentMap<Integer, Peer> nodeToPeer = new ConcurrentHashMap<>();
     static ConcurrentMap<Integer,Map<Integer,Integer>> networkMap = new ConcurrentHashMap<>();
+    private static ConcurrentMap<String, Set<String>> searchDict = new ConcurrentHashMap<>();
     public static void main(String[] args) throws IOException {
         ServerSocket serverSocket = null;
         String filename = "node.conf";
@@ -266,7 +267,12 @@ public class VodServer {
             else if (peerInfo[2].equals("view")) {
                 filepath = peerInfo[3];
                 System.out.println("viewing");
-                filearr = bServer.getContent(0,0, filepath);
+                String peerUuid = "";
+                for (String s : searchDict.get(filepath))
+                {
+                    peerUuid = s;
+                }
+                filearr = bServer.getContent(0,0, filepath, peers.get(peerUuid));
                 try {
                     view(filepath, filearr, out, clientSocket);
                 }
@@ -315,6 +321,7 @@ public class VodServer {
                         System.out.println(e);
                     }
                 }
+                searchDict.put(filepath,peersWithFile);
                 SimpleDateFormat dateFormat = new SimpleDateFormat(
                         "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
                 dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
